@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>거래명세표 - 더조은식품</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background: #e2e8f0; }
+        .a4-container { width: 210mm; min-height: 297mm; background: white; margin: 20px auto; padding: 20mm; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .print-btn { display: block; }
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .a4-container { margin: 0; padding: 10mm; box-shadow: none; width: 100%; min-height: auto; }
+            .print-btn { display: none !important; }
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #111; padding: 8px; font-size: 12px; text-align: center; }
+        th { background-color: #f1f5f9; font-weight: bold; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .stamp { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border: 3px solid red; border-radius: 50%; color: red; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.7; letter-spacing: -1px; }
+    </style>
+</head>
+<body>
+
+    <div class="print-btn text-center pt-8 pb-4">
+        <button onclick="window.print()" class="bg-[#152484] text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-900 transition flex items-center justify-center gap-2 mx-auto">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            명세표 인쇄하기
+        </button>
+    </div>
+
+    <div class="a4-container relative">
+        <h1 class="text-4xl font-black text-center mb-10 tracking-widest underline underline-offset-8">거 래 명 세 표</h1>
+        <div class="flex justify-between items-start mb-8 border-b-2 border-black pb-6">
+            <div class="w-5/12">
+                <table class="w-full h-full border-none">
+                    <tr><td class="border-none text-left text-2xl font-black align-bottom"><span id="inv-client" class="border-b border-black pb-1 inline-block min-w-[200px]">-</span> 귀하</td></tr>
+                    <tr><td class="border-none text-left pt-2 font-bold text-gray-600">출고일자: <span id="inv-date">-</span></td></tr>
+                </table>
+            </div>
+            <div class="w-6/12 relative">
+                <table>
+                    <tr><th rowspan="4" class="w-8">공<br>급<br>자</th><th class="w-20">등록번호</th><td colspan="3" class="font-bold tracking-widest text-left pl-4">123-45-67890</td></tr>
+                    <tr><th>상 호</th><td class="font-bold text-left pl-4">더조은식품</td><th class="w-16">성 명</th><td class="relative font-bold">박 정 의<div class="stamp">더조은<br>식품인</div></td></tr>
+                    <tr><th>사업장</th><td colspan="3" class="text-left pl-4 text-xs">경기도 고양시 일산동구 장항동</td></tr>
+                    <tr><th>업 태</th><td class="text-left pl-4">도매 및 소매업</td><th>종 목</th><td>식자재유통</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="mb-4 text-lg font-bold flex gap-4">
+            <span>합계 금액:</span><span id="inv-total" class="border-b border-black px-4">₩0</span><span class="text-sm font-normal text-gray-500 relative top-1">(공급가액 + 세액)</span>
+        </div>
+        
+        <div class="min-h-[400px]">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="w-10">No.</th>
+                        <th>품목명 (규격)</th>
+                        <th class="w-12">수량</th>
+                        <th class="w-20">단가</th>
+                        <th class="w-24">공급가액</th>
+                        <th class="w-20">세액</th>
+                        <th class="w-24">총금액</th>
+                        <th class="w-16">비고</th>
+                    </tr>
+                </thead>
+                <tbody id="inv-items">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-8 pt-4 border-t border-gray-300 text-center text-sm font-bold text-gray-600 flex justify-between">
+            <span>※ 위와 같이 계산함.</span><span>인수자 : _________________ (서명/인)</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+
+        async function 명세표렌더링() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            if (!id) return;
+
+            const { data, error } = await supabaseClient.from('outbound_ledger').select('*').eq('id', id).single();
+            if (error || !data) { alert("데이터 오류"); return; }
+
+            document.getElementById('inv-client').innerText = data.client_name;
+            document.getElementById('inv-date').innerText = data.sales_date || new Date(data.created_at).toLocaleDateString('ko-KR');
+            document.getElementById('inv-total').innerText = "₩" + data.total_sales.toLocaleString();
+
+            const tbody = document.getElementById('inv-items');
+            
+            let items = [];
+            try {
+                if (typeof data.items_json === 'string') items = JSON.parse(data.items_json);
+                else if (Array.isArray(data.items_json)) items = data.items_json;
+            } catch (e) { items = []; }
+
+            let html = '';
+            if (items.length > 0) {
+                items.forEach((item, index) => {
+                    const supply = item.supply !== undefined ? item.supply : (item.is_taxable !== false ? Math.round(item.total / 1.1) : item.total);
+                    const tax = item.tax !== undefined ? item.tax : (item.total - supply);
+                    const taxBadge = item.is_taxable === false ? '<br><span style="font-size:10px; color:gray;">(면세)</span>' : '';
+
+                    // 💡 대표님 요청 사항 완벽 반영 맵핑
+                    html += `<tr>
+                        <td>${index + 1}</td>
+                        <td class="text-left font-bold pl-2">${item.name} ${taxBadge}</td>
+                        <td>${item.qty}</td>
+                        <td class="text-right pr-2">₩${item.price.toLocaleString()}</td>
+                        <td class="text-right pr-2 text-gray-700">₩${supply.toLocaleString()}</td>
+                        <td class="text-right pr-2 text-gray-500">₩${tax.toLocaleString()}</td>
+                        <td class="text-right font-black pr-2">₩${item.total.toLocaleString()}</td>
+                        <td></td>
+                    </tr>`;
+                });
+                // 빈 칸 채우기 (8칸 모두)
+                for(let i=items.length; i<15; i++) html += `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            } else {
+                // 구버전 데이터 호환 (8칸 모두)
+                html = `<tr>
+                    <td>1</td>
+                    <td class="text-left font-bold pl-2">${data.item_name}</td>
+                    <td>${data.quantity}</td>
+                    <td class="text-right pr-2">₩${data.unit_price ? data.unit_price.toLocaleString() : '-'}</td>
+                    <td class="text-right pr-2 text-gray-700">₩${(data.supply_price || data.total_sales).toLocaleString()}</td>
+                    <td class="text-right pr-2 text-gray-500">₩${(data.tax_amount || 0).toLocaleString()}</td>
+                    <td class="text-right font-black pr-2">₩${data.total_sales.toLocaleString()}</td>
+                    <td></td>
+                </tr>`;
+                for(let i=1; i<15; i++) html += `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        명세표렌더링();
+    </script>
+</body>
+</html>

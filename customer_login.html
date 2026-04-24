@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>더조은식품 — 발주 시스템</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #152484 0%, #1e3a8a 50%, #152484 100%); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-sm">
+        <!-- 로고 영역 -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-[#B8D200] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                <svg class="w-9 h-9 text-[#152484]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black text-white tracking-tight">더조은식품</h1>
+            <p class="text-[#B8D200] text-sm font-bold mt-1">고객사 발주 시스템</p>
+        </div>
+
+        <!-- 로그인 카드 -->
+        <div class="bg-white rounded-[2rem] shadow-2xl p-8">
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">아이디 (이메일)</label>
+                    <input type="email" id="login-email" placeholder="order@yourcompany.com"
+                        class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-[#152484] outline-none transition-colors"
+                        onkeydown="if(event.key==='Enter') document.getElementById('login-pw').focus()">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">비밀번호</label>
+                    <input type="password" id="login-pw" placeholder="비밀번호"
+                        class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-[#152484] outline-none transition-colors"
+                        onkeydown="if(event.key==='Enter') 로그인()">
+                </div>
+            </div>
+
+            <div id="error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-600 text-center"></div>
+
+            <button onclick="로그인()" id="login-btn"
+                class="w-full bg-[#152484] text-white py-4 rounded-2xl font-black text-base shadow-lg hover:opacity-90 transition-all active:scale-95">
+                로그인
+            </button>
+
+            <p class="text-center text-xs text-gray-400 mt-6 font-bold">
+                계정 문의: 더조은식품 담당자에게 연락해 주세요
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        window.onload = async function() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                const { data } = await supabaseClient.from('customer_accounts').select('id').eq('auth_email', session.user.email).maybeSingle();
+                if (data) { window.location.href = 'customer_portal.html'; return; }
+                // 고객 계정이 아니면 일반 직원용으로 리다이렉트
+                window.location.href = 'dashboard.html';
+            }
+        };
+
+        async function 로그인() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-pw').value;
+            const btn = document.getElementById('login-btn');
+            const errMsg = document.getElementById('error-msg');
+
+            if (!email || !password) { 에러표시('아이디와 비밀번호를 입력해 주세요.'); return; }
+
+            btn.innerText = '확인 중...';
+            btn.disabled = true;
+            errMsg.classList.add('hidden');
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                에러표시('아이디 또는 비밀번호가 올바르지 않습니다.');
+                btn.innerText = '로그인'; btn.disabled = false;
+                return;
+            }
+
+            // 고객 계정 확인
+            const { data: account } = await supabaseClient.from('customer_accounts')
+                .select('id, is_active').eq('auth_email', email).maybeSingle();
+
+            if (!account) {
+                에러표시('고객사 계정이 아닙니다. 더조은식품 담당자에게 문의해 주세요.');
+                await supabaseClient.auth.signOut();
+                btn.innerText = '로그인'; btn.disabled = false;
+                return;
+            }
+            if (!account.is_active) {
+                에러표시('비활성화된 계정입니다. 더조은식품 담당자에게 문의해 주세요.');
+                await supabaseClient.auth.signOut();
+                btn.innerText = '로그인'; btn.disabled = false;
+                return;
+            }
+
+            window.location.href = 'customer_portal.html';
+        }
+
+        function 에러표시(msg) {
+            const el = document.getElementById('error-msg');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

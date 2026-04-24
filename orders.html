@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 고객 주문 관리</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @keyframes newOrder { 0%{background:#eff6ff} 100%{background:white} }
+        .new-order { animation: newOrder 2s ease forwards; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display:none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Customer Order Management</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">고객 <span class="text-knight-blue">주문 관리</span></h2>
+            </div>
+            <button onclick="주문목록_불러오기()" class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-knight-blue text-knight-blue rounded-xl font-black text-xs hover:bg-gray-50 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                새로고침
+            </button>
+        </header>
+
+        <!-- KPI 카드 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm text-center">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-1">신규 접수</p>
+                <p class="text-3xl font-black text-gray-900" id="kpi-접수">0</p>
+            </div>
+            <div class="bg-yellow-50 p-5 rounded-3xl border border-yellow-100 shadow-sm text-center">
+                <p class="text-[10px] font-black text-yellow-600 uppercase mb-1">확인중</p>
+                <p class="text-3xl font-black text-yellow-700" id="kpi-확인중">0</p>
+            </div>
+            <div class="bg-knight-blue p-5 rounded-3xl shadow-lg text-center">
+                <p class="text-[10px] font-black text-[#B8D200] uppercase mb-1">오늘 확정</p>
+                <p class="text-3xl font-black text-white" id="kpi-확정">0</p>
+            </div>
+            <div class="bg-green-50 p-5 rounded-3xl border border-green-100 shadow-sm text-center">
+                <p class="text-[10px] font-black text-green-600 uppercase mb-1">배송완료</p>
+                <p class="text-3xl font-black text-green-700" id="kpi-완료">0</p>
+            </div>
+        </div>
+
+        <!-- 상태 필터 -->
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-1">
+            <button onclick="필터변경('전체')" id="filter-전체" class="order-filter px-5 py-2 bg-knight-blue text-white rounded-full font-black text-xs shadow-md whitespace-nowrap">전체</button>
+            <button onclick="필터변경('접수')" id="filter-접수" class="order-filter px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-knight-blue transition">접수</button>
+            <button onclick="필터변경('확인중')" id="filter-확인중" class="order-filter px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-knight-blue transition">확인중</button>
+            <button onclick="필터변경('확정')" id="filter-확정" class="order-filter px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-knight-blue transition">확정</button>
+            <button onclick="필터변경('출고중')" id="filter-출고중" class="order-filter px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-knight-blue transition">출고중</button>
+            <button onclick="필터변경('배송완료')" id="filter-배송완료" class="order-filter px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-knight-blue transition">배송완료</button>
+        </div>
+
+        <!-- 주문 목록 -->
+        <div id="order-list" class="space-y-4">
+            <p class="text-sm text-gray-400 text-center py-12">주문을 불러오는 중...</p>
+        </div>
+    </main>
+
+    <!-- 주문 상세 모달 -->
+    <div id="order-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 bg-knight-blue text-white flex items-center justify-between flex-shrink-0">
+                <div>
+                    <p class="text-[10px] font-black text-[#B8D200] uppercase">Order Detail</p>
+                    <h3 id="m-company" class="text-xl font-black mt-1"></h3>
+                </div>
+                <button onclick="모달닫기()" class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                <!-- 주문 정보 -->
+                <div class="grid grid-cols-3 gap-4 bg-gray-50 rounded-2xl p-4">
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">상태</p><p id="m-status" class="text-sm font-black text-gray-900 mt-1"></p></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">납품 희망일</p><p id="m-delivery" class="text-sm font-black text-gray-900 mt-1"></p></div>
+                    <div><p class="text-[10px] font-black text-gray-400 uppercase">접수일시</p><p id="m-created" class="text-sm font-bold text-gray-500 mt-1"></p></div>
+                </div>
+
+                <!-- 주문 품목 (수정 가능) -->
+                <div>
+                    <h4 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-3">주문 품목 <span class="text-gray-400 font-normal normal-case">(수량 수정 가능)</span></h4>
+                    <div id="m-items" class="space-y-2"></div>
+                    <div class="mt-4 bg-gray-900 p-4 rounded-2xl flex justify-between items-center">
+                        <span class="text-gray-400 text-xs font-black uppercase">합계</span>
+                        <span class="text-xl font-black text-white" id="m-total">₩0</span>
+                    </div>
+                </div>
+
+                <!-- 요청사항 -->
+                <div id="m-notes-wrap" class="hidden">
+                    <p class="text-[10px] font-black text-gray-400 uppercase mb-1">고객 요청사항</p>
+                    <p id="m-notes" class="text-sm text-gray-600 bg-yellow-50 p-3 rounded-xl"></p>
+                </div>
+            </div>
+
+            <!-- 액션 버튼 -->
+            <div class="p-6 border-t border-gray-100 flex gap-3 flex-shrink-0" id="m-actions"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    let 현재로그인유저 = '';
+    let 현재필터 = '전체';
+    let 현재모달주문 = null;
+    let 수정된아이템 = [];
+
+    const STATUS_STYLE = {
+        '접수':    'bg-gray-100 text-gray-700',
+        '확인중':  'bg-yellow-100 text-yellow-700',
+        '확정':    'bg-blue-100 text-blue-700',
+        '출고중':  'bg-purple-100 text-purple-700',
+        '배송완료':'bg-green-100 text-green-700',
+        '취소':    'bg-red-100 text-red-500',
+    };
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+        document.getElementById('main-body').style.display = 'flex';
+        주문목록_불러오기();
+    }
+
+    async function 주문목록_불러오기() {
+        const { data } = await supabaseClient
+            .from('customer_orders').select('*')
+            .order('created_at', { ascending: false });
+
+        const orders = data || [];
+
+        // KPI 업데이트
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('kpi-접수').innerText   = orders.filter(o => o.status === '접수').length;
+        document.getElementById('kpi-확인중').innerText = orders.filter(o => o.status === '확인중').length;
+        document.getElementById('kpi-확정').innerText   = orders.filter(o => o.status === '확정' && o.confirmed_at?.startsWith(today)).length;
+        document.getElementById('kpi-완료').innerText   = orders.filter(o => o.status === '배송완료').length;
+
+        const filtered = 현재필터 === '전체' ? orders : orders.filter(o => o.status === 현재필터);
+        주문목록_렌더링(filtered);
+    }
+
+    function 주문목록_렌더링(orders) {
+        const container = document.getElementById('order-list');
+        if (orders.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-12">해당 주문이 없습니다.</p>';
+            return;
+        }
+
+        container.innerHTML = orders.map(order => {
+            const style = STATUS_STYLE[order.status] || 'bg-gray-100 text-gray-600';
+            const items = order.items_json || [];
+            const preview = items.slice(0, 2).map(i => i.name).join(', ') + (items.length > 2 ? ` 외 ${items.length - 2}건` : '');
+            const isNew = (new Date() - new Date(order.created_at)) < 1800000; // 30분 이내
+
+            return `
+            <div onclick="주문상세열기(${order.id})" class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md cursor-pointer transition-all ${isNew && order.status === '접수' ? 'new-order border-blue-200' : ''}">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black px-3 py-1 rounded-full ${style}">${order.status}</span>
+                        <span class="font-black text-gray-900">${order.company_name}</span>
+                        ${isNew && order.status === '접수' ? '<span class="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full animate-pulse">NEW</span>' : ''}
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-bold">${new Date(order.created_at).toLocaleString('ko-KR')}</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">${preview || '-'}</p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-400">납품 희망일: <strong class="text-gray-700">${order.delivery_date || '미정'}</strong></span>
+                    <span class="font-black text-knight-blue">₩${(order.total_amount || 0).toLocaleString()}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function 필터변경(status) {
+        현재필터 = status;
+        document.querySelectorAll('.order-filter').forEach(btn => {
+            const s = btn.id.replace('filter-', '');
+            btn.className = `order-filter px-5 py-2 rounded-full font-black text-xs whitespace-nowrap transition ${
+                s === status ? 'bg-knight-blue text-white shadow-md' : 'bg-white text-gray-500 border hover:border-knight-blue'
+            }`;
+        });
+        주문목록_불러오기();
+    }
+
+    // ── 주문 상세 모달 ─────────────────────────────────────────
+    async function 주문상세열기(id) {
+        const { data: order } = await supabaseClient.from('customer_orders').select('*').eq('id', id).single();
+        if (!order) return;
+        현재모달주문 = order;
+        수정된아이템 = JSON.parse(JSON.stringify(order.items_json || []));
+
+        document.getElementById('m-company').innerText  = order.company_name;
+        document.getElementById('m-status').innerText   = order.status;
+        document.getElementById('m-delivery').innerText = order.delivery_date || '-';
+        document.getElementById('m-created').innerText  = new Date(order.created_at).toLocaleString('ko-KR');
+
+        if (order.notes) {
+            document.getElementById('m-notes').innerText = order.notes;
+            document.getElementById('m-notes-wrap').classList.remove('hidden');
+        } else {
+            document.getElementById('m-notes-wrap').classList.add('hidden');
+        }
+
+        모달아이템_렌더링();
+        모달액션_렌더링(order.status);
+
+        const modal = document.getElementById('order-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function 모달아이템_렌더링() {
+        const canEdit = ['접수','확인중'].includes(현재모달주문.status);
+        let total = 0;
+        document.getElementById('m-items').innerHTML = 수정된아이템.map((item, idx) => {
+            total += item.unit_price * item.qty;
+            return `
+            <div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div class="flex-1">
+                    <p class="text-sm font-black text-gray-900">${item.name}</p>
+                    <p class="text-xs text-gray-400">₩${item.unit_price.toLocaleString()} × ${item.qty}</p>
+                </div>
+                ${canEdit ? `
+                <div class="flex items-center gap-2">
+                    <button onclick="모달수량변경(${idx}, ${item.qty - 1})" class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center font-black text-gray-600 hover:bg-gray-200">−</button>
+                    <input type="number" value="${item.qty}" min="0" onchange="모달수량직접입력(${idx}, this.value)"
+                        class="w-14 text-center border-2 border-gray-100 rounded-xl p-1 text-sm font-black focus:border-knight-blue outline-none">
+                    <button onclick="모달수량변경(${idx}, ${item.qty + 1})" class="w-7 h-7 rounded-full bg-knight-blue flex items-center justify-center font-black text-white hover:opacity-90">+</button>
+                </div>
+                ` : `<span class="font-black text-knight-blue">×${item.qty}</span>`}
+                <span class="ml-4 font-black text-gray-900 w-24 text-right">₩${(item.unit_price * item.qty).toLocaleString()}</span>
+            </div>`;
+        }).join('');
+        document.getElementById('m-total').innerText = '₩' + total.toLocaleString();
+    }
+
+    function 모달수량변경(idx, qty) {
+        if (qty < 0) return;
+        수정된아이템[idx].qty = qty;
+        모달아이템_렌더링();
+    }
+    function 모달수량직접입력(idx, val) {
+        const qty = parseInt(val) || 0;
+        수정된아이템[idx].qty = Math.max(0, qty);
+        모달아이템_렌더링();
+    }
+
+    function 모달액션_렌더링(status) {
+        const wrap = document.getElementById('m-actions');
+        const btns = [];
+
+        if (status === '접수') {
+            btns.push(`<button onclick="주문상태변경('확인중')" class="flex-1 bg-yellow-400 text-yellow-900 py-3 rounded-2xl font-black text-sm hover:opacity-90 transition">검토 시작</button>`);
+            btns.push(`<button onclick="주문상태변경('취소')" class="px-6 py-3 bg-red-50 text-red-500 rounded-2xl font-black text-sm hover:bg-red-100 transition">취소</button>`);
+        } else if (status === '확인중') {
+            btns.push(`<button onclick="주문확정처리()" class="flex-1 bg-knight-blue text-white py-3 rounded-2xl font-black text-sm hover:opacity-90 shadow-lg transition">확정 → 매출 등록</button>`);
+            btns.push(`<button onclick="주문상태변경('취소')" class="px-6 py-3 bg-red-50 text-red-500 rounded-2xl font-black text-sm hover:bg-red-100 transition">취소</button>`);
+        } else if (status === '확정') {
+            btns.push(`<a href="delivery.html" class="flex-1 bg-[#B8D200] text-knight-blue py-3 rounded-2xl font-black text-sm hover:opacity-90 transition text-center">출고지시서 →</a>`);
+        }
+
+        btns.push(`<button onclick="모달닫기()" class="px-6 py-3 bg-gray-100 text-gray-500 rounded-2xl font-black text-sm hover:bg-gray-200 transition">닫기</button>`);
+        wrap.innerHTML = btns.join('');
+    }
+
+    async function 주문상태변경(newStatus) {
+        await supabaseClient.from('customer_orders').update({ status: newStatus }).eq('id', 현재모달주문.id);
+        모달닫기();
+        주문목록_불러오기();
+    }
+
+    async function 주문확정처리() {
+        const items = 수정된아이템.filter(i => i.qty > 0);
+        if (items.length === 0) { alert('수량이 0인 품목은 제외됩니다. 품목을 확인해 주세요.'); return; }
+        if (!confirm(`${현재모달주문.company_name}의 주문을 확정하고 매출로 등록하시겠습니까?`)) return;
+
+        const totalAmount = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
+        const supplySum   = items.filter(i => i.is_taxable).reduce((s, i) => s + Math.round(i.unit_price * i.qty / 1.1), 0)
+                          + items.filter(i => !i.is_taxable).reduce((s, i) => s + i.unit_price * i.qty, 0);
+        const taxSum      = totalAmount - supplySum;
+
+        // outbound_ledger에 자동 등록
+        const { error } = await supabaseClient.from('outbound_ledger').insert([{
+            client_name:  현재모달주문.company_name,
+            sales_date:   현재모달주문.delivery_date || new Date().toISOString().split('T')[0],
+            quantity:     items.length,
+            total_sales:  totalAmount,
+            supply_price: supplySum,
+            tax_amount:   taxSum,
+            item_name:    items[0].name + (items.length > 1 ? ` 외 ${items.length - 1}건` : ''),
+            items_json:   items.map(i => ({ name: i.name, qty: i.qty, price: i.unit_price, total: i.unit_price * i.qty, supply: Math.round(i.unit_price*i.qty/(i.is_taxable?1.1:1)), tax: i.is_taxable ? i.unit_price*i.qty - Math.round(i.unit_price*i.qty/1.1) : 0, is_taxable: i.is_taxable })),
+            processor:    현재로그인유저,
+            sales_type:   '직납',
+            order_no:     String(현재모달주문.id),
+        }]);
+
+        if (error) { alert('매출 등록 실패: ' + error.message); return; }
+
+        // 주문 상태 확정으로 업데이트
+        await supabaseClient.from('customer_orders').update({
+            status: '확정',
+            items_json: items,
+            total_amount: totalAmount,
+            confirmed_by: 현재로그인유저,
+            confirmed_at: new Date().toISOString(),
+        }).eq('id', 현재모달주문.id);
+
+        alert(`✅ 확정 완료!\n매출장부에 자동 등록되었습니다.\n합계: ₩${totalAmount.toLocaleString()}`);
+        모달닫기();
+        주문목록_불러오기();
+    }
+
+    function 모달닫기() {
+        document.getElementById('order-modal').classList.add('hidden');
+        document.getElementById('order-modal').classList.remove('flex');
+        현재모달주문 = null;
+    }
+    document.getElementById('order-modal').addEventListener('click', e => {
+        if (e.target === document.getElementById('order-modal')) 모달닫기();
+    });
+
+    로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 재무 통계 인사이트</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .text-knight-blue { color: var(--knight-blue); }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+   <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">The Joeun Food Intelligence</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">재무 <span class="text-knight-blue">인사이트 분석</span></h2>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="데이터_새로고침()" class="bg-white text-knight-blue px-4 py-2 rounded-xl border border-gray-200 font-bold text-xs hover:bg-gray-50 transition shadow-sm">🔄 데이터 갱신</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Total Sales (총 매출)</p>
+                <p class="text-2xl font-black text-knight-blue" id="stat-total-sales">₩0</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Total Purchase (총 매입)</p>
+                <p class="text-2xl font-black text-gray-900" id="stat-total-purchase">₩0</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-transform hover:scale-[1.02]">
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Operating Expense (운영비)</p>
+                <p class="text-2xl font-black text-orange-600" id="stat-total-expense">₩0</p>
+            </div>
+            <div class="bg-knight-blue p-6 rounded-3xl shadow-lg border border-knight-blue transition-transform hover:scale-[1.02]">
+                <p class="text-[10px] font-black text-[#B8D200] uppercase mb-2 font-bold italic">Net Profit (순이익)</p>
+                <p class="text-2xl font-black text-white" id="stat-estimated-profit">₩0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-knight-blue uppercase tracking-widest mb-6">Cash Flow Trend</h3>
+                <canvas id="trendChart" height="250"></canvas>
+            </section>
+
+            <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-knight-blue uppercase tracking-widest mb-6">Expense Distribution</h3>
+                <div class="relative h-[250px] flex justify-center">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let trendChart, categoryChart;
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            document.getElementById('main-body').style.display = 'flex';
+            데이터_분석_시작();
+        }
+
+        async function 데이터_분석_시작() {
+            // 💡 1. 4개의 데이터베이스를 모두 끌어옵니다 (결재서류 + 매입매출장부)
+            const purchaseRes = await supabaseClient.from('purchase_orders').select('*');
+            const expenseRes = await supabaseClient.from('expense_reports').select('*');
+            const inboundRes = await supabaseClient.from('inbound_ledger').select('*');
+            const outboundRes = await supabaseClient.from('outbound_ledger').select('*');
+
+            const pData = purchaseRes.data || [];
+            const eData = expenseRes.data || [];
+            const inData = inboundRes.data || [];
+            const outData = outboundRes.data || [];
+
+            // 💡 2. 완벽한 재무 통계 계산
+            let totalSales = 0;
+            let totalPurchase = 0;
+            let totalExpense = 0;
+            const categoryMap = {};
+
+            // 총 매출 계산
+            outData.forEach(o => totalSales += o.total_sales);
+
+            // 총 매입 계산 (매입장부 기록 + 결재 완료된 발주서)
+            inData.forEach(i => totalPurchase += i.total_price);
+            pData.forEach(p => {
+                if(p.status === '승인완료') totalPurchase += p.total_price;
+            });
+
+            // 운영비 계산 (결재 완료된 지출결의서)
+            eData.forEach(e => {
+                if(e.status === '승인완료') {
+                    totalExpense += e.amount;
+                    categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
+                }
+            });
+
+            // 순이익 = 매출 - 매입 - 운영비
+            const netProfit = totalSales - totalPurchase - totalExpense;
+
+            // 💡 3. KPI 카드 업데이트
+            document.getElementById('stat-total-sales').innerText = "₩" + totalSales.toLocaleString();
+            document.getElementById('stat-total-purchase').innerText = "₩" + totalPurchase.toLocaleString();
+            document.getElementById('stat-total-expense').innerText = "₩" + totalExpense.toLocaleString();
+            
+            const profitEl = document.getElementById('stat-estimated-profit');
+            profitEl.innerText = "₩" + netProfit.toLocaleString();
+            
+            // 적자일 경우 순이익 글씨를 붉은색으로
+            if (netProfit < 0) profitEl.classList.replace('text-white', 'text-red-400');
+            else profitEl.classList.replace('text-red-400', 'text-white');
+
+            // 4. 차트 그리기
+            그리기_추이차트(totalSales, totalPurchase, totalExpense);
+            그리기_카테고리차트(categoryMap);
+        }
+
+        // 💡 매출액 데이터가 추가된 3단 막대 그래프
+        function 그리기_추이차트(s, p, e) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['현재 누적 자금 흐름'],
+                    datasets: [
+                        { label: '총 매출', data: [s], backgroundColor: '#B8D200', borderRadius: 10 },
+                        { label: '총 매입', data: [p], backgroundColor: '#152484', borderRadius: 10 },
+                        { label: '운영비', data: [e], backgroundColor: '#f97316', borderRadius: 10 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // 카테고리 차트는 기존 레이아웃 그대로 유지
+        function 그리기_카테고리차트(map) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            if (categoryChart) categoryChart.destroy();
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(map).length > 0 ? Object.keys(map) : ['데이터 없음'],
+                    datasets: [{
+                        data: Object.keys(map).length > 0 ? Object.values(map) : [1],
+                        backgroundColor: Object.keys(map).length > 0 ? ['#152484', '#B8D200', '#60a5fa', '#f87171', '#fbbf24'] : ['#e5e7eb'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function 데이터_새로고침() { 데이터_분석_시작(); }
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

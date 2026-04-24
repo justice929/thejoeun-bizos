@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 고객사 계정 관리</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display:none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Master Data — Customer Access</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">고객사 <span class="text-knight-blue">계정 관리</span></h2>
+            </div>
+            <div id="account-count" class="px-4 py-2 bg-[#B8D200]/20 rounded-full text-xs font-black text-knight-blue">등록 계정 0개</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- 계정 등록 폼 -->
+            <div class="lg:col-span-2">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-2 italic">고객사 계정 생성</h2>
+                    <p class="text-xs text-gray-400 mb-6 bg-blue-50 border border-blue-100 p-3 rounded-xl">
+                        계정 생성 후 고객사에 아이디/비밀번호를 전달하세요.
+                        고객사는 <strong class="text-knight-blue">customer_login.html</strong>에서 로그인하여 발주합니다.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">고객사명 *</label>
+                            <input type="text" id="c-company" placeholder="예: 락희차이나"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div class="relative">
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">거래처 연결 (매출처)</label>
+                            <input type="text" id="c-partner" placeholder="거래처명 초성 검색"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none"
+                                onfocus="거래처검색()" oninput="거래처검색()">
+                            <ul id="c-partner-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-knight-blue rounded-xl shadow-xl max-h-40 overflow-y-auto divide-y divide-gray-100"></ul>
+                            <input type="hidden" id="c-partner-code">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-knight-blue mb-2 uppercase">로그인 아이디 * (이메일 형식)</label>
+                            <input type="email" id="c-login-id" placeholder="order@company.com"
+                                class="w-full border-2 border-knight-blue/30 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-knight-blue mb-2 uppercase">초기 비밀번호 *</label>
+                            <div class="relative">
+                                <input type="text" id="c-password" placeholder="초기 비밀번호 설정"
+                                    class="w-full border-2 border-knight-blue/30 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none shadow-sm pr-24">
+                                <button onclick="비밀번호자동생성()"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-knight-blue bg-[#B8D200]/30 hover:bg-[#B8D200] px-3 py-1.5 rounded-xl transition">
+                                    자동생성
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">담당자 이름</label>
+                            <input type="text" id="c-contact-name" placeholder="주문 담당자 이름"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">담당자 연락처</label>
+                            <input type="tel" id="c-contact-phone" placeholder="010-0000-0000"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="고객계정생성()"
+                        class="w-full bg-knight-blue text-white py-4 rounded-2xl font-black text-sm shadow-lg hover:opacity-90 transition-all">
+                        고객사 계정 생성
+                    </button>
+                </section>
+            </div>
+
+            <!-- 현황 카드 -->
+            <aside class="space-y-5">
+                <div class="bg-knight-blue p-7 rounded-[2.5rem] text-white shadow-xl">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-4 italic">고객사 현황</h3>
+                    <p class="text-5xl font-black text-white" id="stat-active">0</p>
+                    <p class="text-xs text-gray-300 mt-1">활성 계정</p>
+                    <div class="mt-5 pt-5 border-t border-white/10">
+                        <p class="text-4xl font-black text-[#B8D200]/70" id="stat-inactive">0</p>
+                        <p class="text-xs text-gray-400 mt-1">비활성 계정</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-3 italic">로그인 안내</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        고객사 발주 페이지:<br>
+                        <code class="text-[11px] bg-gray-100 text-knight-blue px-2 py-1 rounded font-black block mt-1">customer_login.html</code>
+                    </p>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 계정 목록 -->
+        <section class="mt-8 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-black text-knight-blue uppercase tracking-widest">등록된 고객사 계정</h3>
+                <button onclick="계정목록_불러오기()" class="text-[10px] font-black text-knight-blue border-2 border-knight-blue/20 px-3 py-2 rounded-xl hover:bg-gray-50 transition">
+                    🔄 새로고침
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-y border-gray-100">
+                        <tr>
+                            <th class="p-4">고객사명</th>
+                            <th class="p-4">로그인 아이디</th>
+                            <th class="p-4">담당자</th>
+                            <th class="p-4">연락처</th>
+                            <th class="p-4 text-center">상태</th>
+                            <th class="p-4 text-center">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="account-list" class="divide-y divide-gray-100 text-sm font-bold">
+                        <tr><td colspan="6" class="p-8 text-center text-gray-400">로딩 중...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    let 현재로그인유저 = '';
+    let 매출처DB = [];
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+        document.getElementById('main-body').style.display = 'flex';
+        await 매출처_로드();
+        계정목록_불러오기();
+    }
+
+    async function 매출처_로드() {
+        const { data } = await supabaseClient.from('partner_master').select('partner_code, company_name').eq('partner_type', '매출처');
+        매출처DB = data || [];
+    }
+
+    // ── 거래처 초성 검색 ────────────────────────────────────────
+    function 거래처검색() {
+        const kw = document.getElementById('c-partner').value;
+        const list = 초성검색(매출처DB, kw, 'company_name');
+        const dropdown = document.getElementById('c-partner-dropdown');
+        dropdown.innerHTML = list.map(p =>
+            `<li onclick="거래처선택('${p.partner_code}','${p.company_name}')" class="p-3 hover:bg-[#B8D200]/10 cursor-pointer text-sm font-bold">${p.company_name}</li>`
+        ).join('') || '<li class="p-3 text-xs text-gray-400">결과 없음</li>';
+        dropdown.classList.remove('hidden');
+    }
+
+    function 거래처선택(code, name) {
+        document.getElementById('c-partner').value = name;
+        document.getElementById('c-partner-code').value = code;
+        if (!document.getElementById('c-company').value) document.getElementById('c-company').value = name;
+        document.getElementById('c-partner-dropdown').classList.add('hidden');
+    }
+
+    document.addEventListener('click', e => {
+        const input = document.getElementById('c-partner');
+        const drop  = document.getElementById('c-partner-dropdown');
+        if (input && drop && !input.contains(e.target) && !drop.contains(e.target)) drop.classList.add('hidden');
+    });
+
+    // ── 비밀번호 자동 생성 ─────────────────────────────────────
+    function 비밀번호자동생성() {
+        const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+        let pw = '';
+        for (let i = 0; i < 10; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+        document.getElementById('c-password').value = pw;
+    }
+
+    // ── 계정 생성 ──────────────────────────────────────────────
+    async function 고객계정생성() {
+        const company      = document.getElementById('c-company').value.trim();
+        const loginId      = document.getElementById('c-login-id').value.trim();
+        const password     = document.getElementById('c-password').value.trim();
+        const partnerCode  = document.getElementById('c-partner-code').value;
+        const contactName  = document.getElementById('c-contact-name').value.trim();
+        const contactPhone = document.getElementById('c-contact-phone').value.trim();
+
+        if (!company || !loginId || !password) { alert('고객사명, 아이디, 비밀번호는 필수입니다.'); return; }
+
+        // Supabase Auth 계정 생성
+        const { error: authError } = await supabaseClient.auth.signUp({ email: loginId, password });
+        if (authError && !authError.message.includes('already registered')) {
+            alert('계정 생성 실패: ' + authError.message); return;
+        }
+
+        // customer_accounts 테이블 저장
+        const { error } = await supabaseClient.from('customer_accounts').insert([{
+            partner_code: partnerCode || null,
+            company_name: company,
+            auth_email: loginId,
+            contact_name: contactName,
+            contact_phone: contactPhone,
+            is_active: true
+        }]);
+
+        if (error && !error.message.includes('duplicate')) {
+            alert('저장 실패: ' + error.message); return;
+        }
+
+        alert(`✅ 고객사 계정 생성 완료!\n\n아이디: ${loginId}\n비밀번호: ${password}\n\n고객사에 전달해 주세요.`);
+        ['c-company','c-login-id','c-password','c-partner','c-partner-code','c-contact-name','c-contact-phone']
+            .forEach(id => { document.getElementById(id).value = ''; });
+        계정목록_불러오기();
+    }
+
+    // ── 계정 목록 ──────────────────────────────────────────────
+    async function 계정목록_불러오기() {
+        const { data } = await supabaseClient.from('customer_accounts').select('*').order('created_at', { ascending: false });
+        const list = data || [];
+
+        const active   = list.filter(c => c.is_active).length;
+        const inactive = list.filter(c => !c.is_active).length;
+        document.getElementById('account-count').innerText = `등록 계정 ${list.length}개`;
+        document.getElementById('stat-active').innerText   = active;
+        document.getElementById('stat-inactive').innerText = inactive;
+
+        const tbody = document.getElementById('account-list');
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400">등록된 고객사 계정이 없습니다.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = list.map(c => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="p-4 font-black text-gray-900">${c.company_name}</td>
+                <td class="p-4 text-knight-blue font-bold">${c.auth_email}</td>
+                <td class="p-4 text-gray-500">${c.contact_name  || '-'}</td>
+                <td class="p-4 text-gray-500">${c.contact_phone || '-'}</td>
+                <td class="p-4 text-center">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-black ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                        ${c.is_active ? '활성' : '비활성'}
+                    </span>
+                </td>
+                <td class="p-4 text-center">
+                    <button onclick="상태토글(${c.id}, ${c.is_active})"
+                        class="text-[10px] font-black px-3 py-1.5 rounded-lg border transition
+                        ${c.is_active ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}">
+                        ${c.is_active ? '비활성화' : '활성화'}
+                    </button>
+                </td>
+            </tr>`).join('');
+    }
+
+    async function 상태토글(id, 현재) {
+        if (!confirm(`이 계정을 ${현재 ? '비활성화' : '활성화'}하시겠습니까?`)) return;
+        await supabaseClient.from('customer_accounts').update({ is_active: !현재 }).eq('id', id);
+        계정목록_불러오기();
+    }
+
+    로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

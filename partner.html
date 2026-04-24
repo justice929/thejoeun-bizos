@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 거래처 마스터 관리</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">The Joeun Food Partner Relationship</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">거래처 <span class="text-knight-blue">마스터 관리</span></h2>
+            </div>
+            <button onclick="거래처저장()" class="bg-knight-blue text-white px-8 py-3 rounded-xl font-black text-sm hover:opacity-90 shadow-lg transition-all">신규 거래처 등록</button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest italic">Partner Registration</h2>
+                        <div class="flex bg-gray-100 p-1 rounded-xl">
+                            <button onclick="유형변경('매입처')" id="tab-매입처" class="px-4 py-2 text-[10px] font-black rounded-lg bg-white shadow-sm transition-all">매입처</button>
+                            <button onclick="유형변경('매출처')" id="tab-매출처" class="px-4 py-2 text-[10px] font-black text-gray-400 rounded-lg transition-all">매출처</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">거래처 고유코드</label>
+                            <input type="text" id="p-code" placeholder="P-0001" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">사업자등록번호</label>
+                            <input type="text" id="p-bizno" placeholder="000-00-00000" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">업체명 (상호)</label>
+                            <input type="text" id="p-name" placeholder="상호명 입력" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">대표자명</label>
+                            <input type="text" id="p-ceo" placeholder="대표자 성함" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">사업장 주소</label>
+                        <input type="text" id="p-address" placeholder="사업장 소재지 전체 주소" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">대표 전화번호 / 연락처</label>
+                            <input type="text" id="p-tel" placeholder="02-0000-0000" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase text-knight-blue">팩스 번호 (Fax)</label>
+                            <input type="text" id="p-fax" placeholder="02-0000-0000" class="w-full border-2 border-knight-blue/20 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none transition-all shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest">세금계산서 이메일 (Tax Email)</label>
+                            <input type="email" id="p-email" placeholder="finance@company.com" class="w-full border-2 border-[#B8D200]/30 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none transition-all shadow-sm h-[56px]">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase italic text-knight-blue">사업자등록증 첨부 (License File)</label>
+                            <div class="relative h-[56px]">
+                                <input type="file" id="p-license" class="hidden" onchange="파일명표시(this)">
+                                <button onclick="document.getElementById('p-license').click()" class="w-full h-full border-2 border-dashed border-knight-blue/30 rounded-2xl px-4 text-xs font-black text-knight-blue bg-knight-blue/5 hover:bg-knight-blue/10 transition-all flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <span id="file-name-display" class="truncate">파일 선택 (PDF, JPG)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-6 italic">Partner List</h3>
+                    <div id="partner-list" class="space-y-3">
+                        <p class="text-sm font-bold text-gray-400 text-center py-10">데이터 로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+        let 현재유형 = '매입처';
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            목록불러오기();
+        }
+
+        function 유형변경(type) {
+            현재유형 = type;
+            ['매입처', '매출처'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                btn.className = (t === type) ? "px-4 py-2 text-[10px] font-black rounded-lg bg-white shadow-sm transition-all" : "px-4 py-2 text-[10px] font-black text-gray-400 rounded-lg transition-all";
+            });
+        }
+
+        function 파일명표시(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('file-name-display').innerText = input.files[0].name;
+            }
+        }
+
+        async function 거래처저장() {
+            const code = document.getElementById('p-code').value;
+            const name = document.getElementById('p-name').value;
+            const email = document.getElementById('p-email').value;
+            const fax = document.getElementById('p-fax').value; 
+            const fileInput = document.getElementById('p-license');
+            
+            if(!code || !name || !email) { 
+                alert("코드, 업체명, 세금계산서 이메일은 필수 입력 사항입니다!"); 
+                return; 
+            }
+
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : "미첨부";
+
+            const { error } = await supabaseClient.from('partner_master').insert([{
+                partner_code: code,
+                partner_type: 현재유형,
+                biz_no: document.getElementById('p-bizno').value,
+                company_name: name,
+                ceo_name: document.getElementById('p-ceo').value,
+                address: document.getElementById('p-address').value,
+                tel: document.getElementById('p-tel').value,
+                fax: fax,
+                tax_email: email, 
+                license_url: fileName, 
+                status: '거래중',
+                processor: 현재로그인유저 // 💡 작성자 기록
+            }]);
+
+            if (error) alert("저장 실패: " + error.message);
+            else { 
+                alert("거래처 정보가 성공적으로 등록되었습니다! 🚀"); 
+                목록불러오기(); 
+            }
+        }
+
+        // 💡 [고도화] 거래처 마스터 삭제 엔진
+        async function 거래처삭제(code) {
+            if(!confirm(`거래처코드 [${code}] 정보를 정말 삭제하시겠습니까?`)) return;
+
+            const { error } = await supabaseClient.from('partner_master').delete().eq('partner_code', code);
+
+            if (error) alert("삭제 실패: " + error.message);
+            else {
+                alert("거래처가 마스터에서 삭제되었습니다.");
+                목록불러오기();
+            }
+        }
+
+        async function 목록불러오기() {
+            const { data } = await supabaseClient.from('partner_master').select('*').order('created_at', { ascending: false }).limit(8);
+            const container = document.getElementById('partner-list');
+            if (data && data.length > 0) {
+                let html = '';
+                data.forEach(p => {
+                    const typeColor = p.partner_type === '매입처' ? 'text-knight-blue' : 'text-orange-500';
+                    
+                    // 💡 권한 검증: 본인 또는 마스터만 삭제 버튼 표시
+                    const isOwner = 현재로그인유저 === p.processor;
+                    const isMaster = 현재로그인유저 === MASTER_ID;
+                    const canDelete = isOwner || isMaster;
+
+                    const deleteBtnHtml = canDelete 
+                        ? `<button onclick="거래처삭제('${p.partner_code}')" class="text-[10px] text-red-500 hover:text-red-700 font-bold ml-3 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition-colors">삭제</button>` 
+                        : ``;
+
+                    html += `
+                    <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex justify-between items-center transition-all hover:bg-white hover:shadow-sm mb-3">
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-gray-900">${p.company_name}</p>
+                            <p class="text-[10px] font-bold ${typeColor} mt-1">${p.partner_type} | ${p.tax_email || '이메일 없음'}</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-[10px] font-black text-gray-400 uppercase italic">Active</span>
+                            ${deleteBtnHtml}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-10">등록된 거래처가 없습니다.</p>';
+            }
+        }
+
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

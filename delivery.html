@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 출고지시서</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @media print {
+            #sidebar-container, nav, header button, .no-print { display: none !important; }
+            main { margin-left: 0 !important; }
+            .print-card { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display:none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Delivery & Outbound</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">출고지시서 <span class="text-knight-blue">배송 관리</span></h2>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="출고목록_불러오기()" class="px-4 py-2 bg-white border-2 border-knight-blue text-knight-blue rounded-xl font-black text-xs hover:bg-gray-50 transition shadow-sm">🔄 새로고침</button>
+                <button onclick="window.print()" class="no-print px-4 py-2 bg-knight-blue text-white rounded-xl font-black text-xs hover:opacity-90 transition shadow-md">🖨️ 인쇄</button>
+            </div>
+        </header>
+
+        <!-- 날짜 필터 -->
+        <div class="flex items-center gap-4 mb-6 no-print">
+            <label class="text-xs font-black text-gray-500 uppercase">출고일</label>
+            <input type="date" id="filter-date" class="border-2 border-gray-100 rounded-xl p-3 text-sm font-bold bg-white focus:border-knight-blue outline-none" oninput="출고목록_불러오기()">
+            <button onclick="오늘설정()" class="px-4 py-2 bg-[#B8D200] text-knight-blue rounded-xl font-black text-xs hover:opacity-90 transition shadow-sm">오늘</button>
+        </div>
+
+        <!-- 출고 목록 -->
+        <div id="delivery-list" class="space-y-4">
+            <p class="text-sm text-gray-400 text-center py-12">출고 데이터를 불러오는 중...</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    let 현재로그인유저 = '';
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+        document.getElementById('main-body').style.display = 'flex';
+        오늘설정();
+    }
+
+    function 오늘설정() {
+        document.getElementById('filter-date').valueAsDate = new Date();
+        출고목록_불러오기();
+    }
+
+    async function 출고목록_불러오기() {
+        const date = document.getElementById('filter-date').value;
+
+        const { data } = await supabaseClient
+            .from('customer_orders')
+            .select('*')
+            .in('status', ['확정', '출고중', '배송완료'])
+            .eq('delivery_date', date)
+            .order('created_at', { ascending: true });
+
+        const orders = data || [];
+        const container = document.getElementById('delivery-list');
+
+        if (orders.length === 0) {
+            container.innerHTML = `<div class="bg-white p-12 rounded-[2.5rem] border border-gray-100 text-center">
+                <p class="text-4xl mb-3">📦</p>
+                <p class="text-sm font-bold text-gray-400">${date} 출고 예정 주문이 없습니다.</p>
+            </div>`;
+            return;
+        }
+
+        container.innerHTML = orders.map(order => {
+            const items = order.items_json || [];
+            const STATUS_COLOR = { '확정': 'bg-blue-100 text-blue-700', '출고중': 'bg-purple-100 text-purple-700', '배송완료': 'bg-green-100 text-green-700' };
+            const statusStyle = STATUS_COLOR[order.status] || 'bg-gray-100 text-gray-600';
+
+            return `
+            <div class="print-card bg-white rounded-[2rem] border-2 ${order.status === '출고중' ? 'border-purple-200' : order.status === '배송완료' ? 'border-green-200' : 'border-gray-100'} shadow-sm overflow-hidden">
+                <!-- 출고지시서 헤더 -->
+                <div class="p-6 bg-gradient-to-r from-knight-blue to-blue-800 text-white">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <p class="text-[10px] font-black text-[#B8D200] uppercase tracking-widest">Delivery Order</p>
+                            <h3 class="text-xl font-black mt-1">${order.company_name}</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-black px-3 py-1 rounded-full ${statusStyle} block mb-2">${order.status}</span>
+                            <p class="text-[10px] text-gray-300">주문 #${order.id}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                        <div><p class="text-[10px] text-blue-200 uppercase">납품일</p><p class="font-black">${order.delivery_date}</p></div>
+                        <div><p class="text-[10px] text-blue-200 uppercase">합계금액</p><p class="font-black">₩${(order.total_amount||0).toLocaleString()}</p></div>
+                    </div>
+                </div>
+
+                <!-- 품목 리스트 -->
+                <div class="p-6">
+                    <table class="w-full text-left">
+                        <thead class="border-b-2 border-gray-100">
+                            <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <th class="pb-3">품목명</th>
+                                <th class="pb-3 text-center">수량</th>
+                                <th class="pb-3 text-right">단가</th>
+                                <th class="pb-3 text-right">금액</th>
+                                <th class="pb-3 text-center no-print">확인</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 text-sm">
+                            ${items.map((item, i) => `
+                            <tr class="py-2">
+                                <td class="py-3 font-bold text-gray-900">${item.name}</td>
+                                <td class="py-3 text-center font-black text-knight-blue text-lg">${item.qty}</td>
+                                <td class="py-3 text-right text-gray-400 text-xs">₩${(item.unit_price||item.price||0).toLocaleString()}</td>
+                                <td class="py-3 text-right font-black">₩${(item.total||0).toLocaleString()}</td>
+                                <td class="py-3 text-center no-print">
+                                    <div class="w-6 h-6 border-2 border-gray-300 rounded mx-auto"></div>
+                                </td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+
+                    ${order.notes ? `<div class="mt-4 p-3 bg-yellow-50 rounded-xl border border-yellow-100"><p class="text-xs font-bold text-yellow-700">💬 ${order.notes}</p></div>` : ''}
+
+                    <!-- 배송 담당자 + 상태 변경 버튼 -->
+                    <div class="mt-5 flex flex-col md:flex-row gap-3 items-start md:items-center no-print">
+                        <div class="flex-1">
+                            <label class="text-[10px] font-black text-gray-400 uppercase mb-1 block">배송 담당자</label>
+                            <input type="text" id="driver-${order.id}" placeholder="담당자 이름 입력"
+                                value="${order.driver_name || ''}"
+                                class="border-2 border-gray-100 rounded-xl p-3 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none w-full md:w-48">
+                        </div>
+                        <div class="flex gap-2">
+                            ${order.status === '확정' ? `
+                            <button onclick="배송상태변경(${order.id}, '출고중')"
+                                class="px-5 py-3 bg-purple-500 text-white rounded-xl font-black text-xs hover:opacity-90 transition shadow-sm">
+                                🚚 출고 처리
+                            </button>` : ''}
+                            ${order.status === '출고중' ? `
+                            <button onclick="배송상태변경(${order.id}, '배송완료')"
+                                class="px-5 py-3 bg-green-500 text-white rounded-xl font-black text-xs hover:opacity-90 transition shadow-sm">
+                                ✅ 배송 완료
+                            </button>` : ''}
+                            ${order.status === '배송완료' ? `
+                            <span class="px-5 py-3 bg-green-100 text-green-700 rounded-xl font-black text-xs">✅ 배송 완료</span>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- 인쇄용 서명란 -->
+                    <div class="mt-6 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-center text-xs text-gray-400 font-bold">
+                        <div class="border border-gray-100 rounded-xl p-3">출고 담당 :<br><br></div>
+                        <div class="border border-gray-100 rounded-xl p-3">배송 기사 :<br><br></div>
+                        <div class="border border-gray-100 rounded-xl p-3">수령 확인 :<br><br></div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function 배송상태변경(orderId, newStatus) {
+        const driverName = document.getElementById(`driver-${orderId}`).value.trim();
+        const update = { status: newStatus };
+        if (driverName) update.driver_name = driverName;
+        if (newStatus === '배송완료') update.delivered_at = new Date().toISOString();
+
+        await supabaseClient.from('customer_orders').update(update).eq('id', orderId);
+        출고목록_불러오기();
+    }
+
+    로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

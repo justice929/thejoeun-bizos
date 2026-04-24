@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 스마트 지출결의서 (초성 검색 엔진 탑재)</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background-color: #B8D200; box-shadow: 0 0 10px #B8D200;
+            animation: scan 1.5s infinite linear; display: none;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Agile Expense Workflow</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">스마트 <span class="text-knight-blue">지출결의서</span></h2>
+            </div>
+            <div id="master-status" class="px-4 py-2 bg-gray-100 rounded-full text-xs font-bold text-gray-500 animate-pulse">
+                계정과목 동기화 중...
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest italic">New Expense Report</h2>
+                        <span class="text-[10px] font-bold text-gray-400" id="current-date"></span>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest">1. 영수증 업로드 (AI 자동 인식)</label>
+                        <div class="relative w-full h-32 border-2 border-dashed border-knight-blue/30 rounded-2xl bg-knight-blue/5 overflow-hidden group hover:border-knight-blue transition-colors cursor-pointer" onclick="document.getElementById('e-receipt').click()">
+                            <input type="file" id="e-receipt" class="hidden" accept="image/*" onchange="영수증인식시뮬레이션(this)">
+                            <div id="scan-line" class="scan-line"></div>
+                            <div id="upload-content" class="absolute inset-0 flex flex-col items-center justify-center text-knight-blue">
+                                <svg class="w-8 h-8 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                <p class="text-xs font-black" id="file-name-display">영수증 사진 업로드 (AI 분석)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 relative">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">지출 일자</label>
+                            <input type="date" id="e-date" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        
+                        <div class="relative">
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">지출 항목 (초성 검색 지원)</label>
+                            <div class="relative">
+                                <input type="text" id="e-category-search" placeholder="예: ㅂㄹ -> 복리후생비 검색" autocomplete="off" class="w-full border-2 border-[#B8D200] rounded-2xl p-4 text-sm font-black bg-white focus:border-knight-blue outline-none cursor-text transition-colors shadow-sm" onfocus="계정드롭다운열기()" oninput="초성검색실행()">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                            <input type="hidden" id="e-category-value" value="">
+                            
+                            <ul id="category-dropdown" class="hidden absolute z-50 w-full mt-2 bg-white border-2 border-knight-blue rounded-2xl shadow-xl max-h-48 overflow-y-auto divide-y divide-gray-100"></ul>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-knight-blue mb-2 uppercase">결제 금액 (₩)</label>
+                            <input type="number" id="e-amount" placeholder="0" class="w-full border-2 border-knight-blue/30 rounded-2xl p-4 text-xl font-black bg-white focus:border-knight-blue outline-none transition-all shadow-sm text-knight-blue">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">사용처 (상호명)</label>
+                            <input type="text" id="e-vendor" placeholder="영수증 인식 또는 직접 입력" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">지출 목적 및 상세 내역</label>
+                        <textarea id="e-desc" rows="3" placeholder="지출 사유를 간단히 입력하세요" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none resize-none"></textarea>
+                    </div>
+
+                    <button onclick="지출결의서제출()" class="w-full bg-knight-blue text-white py-5 rounded-3xl font-black text-lg hover:opacity-90 shadow-xl transition-all flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        <span>기안 올리기 (Submit)</span>
+                    </button>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-6 italic">My Request Status</h3>
+                    <div id="expense-list" class="space-y-4">
+                        <p class="text-sm font-bold text-gray-400 text-center py-10">데이터 로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+        let 현재업로드파일명 = '';
+        let 계정과목DB = [];
+
+        document.getElementById('e-date').valueAsDate = new Date();
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            
+            await 마스터데이터_불러오기();
+            내_지출내역_불러오기();
+        }
+
+        // 💡 1. 수파베이스에서 계정과목 목록을 가져옵니다.
+        async function 마스터데이터_불러오기() {
+            const { data, error } = await supabaseClient.from('account_master').select('account_name, account_code').order('account_code', { ascending: true });
+            if (data && data.length > 0) {
+                계정과목DB = data;
+                document.getElementById('master-status').innerText = `마스터 연동 완료 (${data.length}건)`;
+                document.getElementById('master-status').className = "px-4 py-2 bg-[#B8D200]/20 rounded-full text-xs font-black text-knight-blue";
+                드롭다운렌더링(계정과목DB); // 처음엔 전체 리스트를 그려둡니다.
+            } else {
+                document.getElementById('e-category-search').placeholder = "등록된 마스터 데이터가 없습니다.";
+                document.getElementById('e-category-search').disabled = true;
+            }
+        }
+
+        // 💡 3. 입력창에 글자를 칠 때마다 실행되는 필터 로직
+        function 초성검색실행() {
+            const keyword = document.getElementById('e-category-search').value.toLowerCase().replace(/\s/g, ''); // 공백 제거
+            
+            // 사용자가 입력한 단어의 초성
+            const keywordCho = 초성추출(keyword); 
+
+            // 원본 DB와 매칭 (단어 자체에 포함되거나, 초성으로 포함되거나)
+            const 검색결과 = 계정과목DB.filter(item => {
+                const nameStr = item.account_name.replace(/\s/g, '');
+                return nameStr.includes(keyword) || 초성추출(nameStr).includes(keywordCho);
+            });
+
+            드롭다운렌더링(검색결과);
+            document.getElementById('category-dropdown').classList.remove('hidden');
+        }
+
+        // 💡 4. 드롭다운 리스트를 HTML로 그리는 함수
+        function 드롭다운렌더링(목록) {
+            const listArea = document.getElementById('category-dropdown');
+            let html = '';
+            if (목록.length > 0) {
+                목록.forEach(item => {
+                    html += `
+                    <li onclick="계정선택됨('${item.account_name}')" class="p-3 hover:bg-[#B8D200]/10 cursor-pointer text-sm font-bold flex items-center gap-2 group transition-colors">
+                        <span class="text-[10px] bg-knight-blue/10 text-knight-blue px-2 py-1 rounded font-black">${item.account_code}</span>
+                        <span class="group-hover:text-knight-blue">${item.account_name}</span>
+                    </li>`;
+                });
+            } else {
+                html = `<li class="p-4 text-center text-xs text-gray-400 font-bold">검색 결과가 없습니다.</li>`;
+            }
+            listArea.innerHTML = html;
+        }
+
+        function 계정드롭다운열기() {
+            초성검색실행(); // 현재 입력된 값 기준으로 필터링해서 열기
+            document.getElementById('category-dropdown').classList.remove('hidden');
+        }
+
+        // 항목을 클릭했을 때 작동
+        function 계정선택됨(name) {
+            document.getElementById('e-category-search').value = name;
+            document.getElementById('e-category-value').value = name; // 실제 저장용 숨김 데이터
+            document.getElementById('category-dropdown').classList.add('hidden');
+        }
+
+        // 바깥쪽을 클릭하면 드롭다운이 닫히도록 설정
+        document.addEventListener('click', e => {
+            const container = document.getElementById('e-category-search').parentElement;
+            if (!container.contains(e.target)) {
+                document.getElementById('category-dropdown').classList.add('hidden');
+            }
+        });
+
+        function 영수증인식시뮬레이션(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                현재업로드파일명 = file.name;
+                const scanLine = document.getElementById('scan-line');
+                const content = document.getElementById('upload-content');
+                scanLine.style.display = 'block';
+                content.innerHTML = `<p class="text-sm font-black text-[#B8D200] animate-pulse">AI 분석 중...</p>`;
+                
+                setTimeout(() => {
+                    scanLine.style.display = 'none';
+                    content.innerHTML = `<p class="text-xs font-black text-knight-blue">✅ ${file.name}</p>`;
+                    document.getElementById('e-amount').value = 15000;
+                    document.getElementById('e-vendor').value = "스타벅스 (자동인식)";
+                }, 1500);
+            }
+        }
+
+        async function 지출결의서제출() {
+            const date = document.getElementById('e-date').value;
+            const category = document.getElementById('e-category-value').value; // 숨겨진 진짜 값 사용
+            const amount = document.getElementById('e-amount').value;
+            const vendor = document.getElementById('e-vendor').value;
+            const desc = document.getElementById('e-desc').value;
+
+            if(!category) { alert("목록에서 지출 항목을 정확히 선택해 주세요."); return; }
+            if(!amount || !vendor) { alert("결제 금액, 사용처를 확인해 주세요."); return; }
+
+            const { error } = await supabaseClient.from('expense_reports').insert([{
+                requester: 현재로그인유저, expense_date: date, category: category,
+                amount: Number(amount), vendor: vendor, description: desc,
+                receipt_url: 현재업로드파일명 || "미첨부", status: '기안중'
+            }]);
+
+            if (error) alert("제출 실패: " + error.message);
+            else {
+                alert("성공적으로 상신되었습니다! 🚀");
+                수량초기화(); 내_지출내역_불러오기();
+            }
+        }
+
+        function 수량초기화() {
+            document.getElementById('e-category-search').value = '';
+            document.getElementById('e-category-value').value = '';
+            document.getElementById('e-amount').value = '';
+            document.getElementById('e-vendor').value = '';
+            document.getElementById('e-desc').value = '';
+            document.getElementById('upload-content').innerHTML = `<p class="text-xs font-black">영수증 사진 업로드 (AI 분석)</p>`;
+            현재업로드파일명 = '';
+        }
+
+        async function 기안취소(id) {
+            if(!confirm("이 요청을 취소하시겠습니까?")) return;
+            await supabaseClient.from('expense_reports').delete().eq('id', id);
+            내_지출내역_불러오기();
+        }
+
+        async function 내_지출내역_불러오기() {
+            const { data } = await supabaseClient.from('expense_reports').select('*').eq('requester', 현재로그인유저).order('created_at', { ascending: false }).limit(6);
+            const container = document.getElementById('expense-list');
+            if (data && data.length > 0) {
+                let html = '';
+                data.forEach(d => {
+                    let statusBadge = `<span class="px-2 py-1 ${d.status === '승인완료' ? 'bg-[#B8D200]/20 text-[#B8D200]' : 'bg-orange-100 text-orange-600'} rounded text-[10px] font-black">${d.status}</span>`;
+                    html += `
+                    <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex justify-between items-start mb-3 transition-all hover:bg-white hover:shadow-sm">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">${statusBadge}<p class="text-xs font-bold text-gray-900">${d.category}</p></div>
+                            <p class="text-sm font-black text-knight-blue">₩${d.amount.toLocaleString()}</p>
+                            <p class="text-[10px] font-bold text-gray-400 mt-1">${d.vendor}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-400 font-bold">${d.expense_date}</p>
+                            ${d.status === '기안중' ? `<button onclick="기안취소(${d.id})" class="text-[10px] text-red-400 hover:text-red-600 transition font-bold mt-2 bg-red-50 px-2 py-1 rounded">취소</button>` : ''}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-10">내역 없음</p>';
+            }
+        }
+
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

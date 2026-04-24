@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 직원 관리</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display:none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Human Resources</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">직원 <span class="text-knight-blue">관리</span></h2>
+            </div>
+            <div id="emp-count" class="px-4 py-2 bg-[#B8D200]/20 rounded-full text-xs font-black text-knight-blue">재직자 0명</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- 등록 폼 -->
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6 italic" id="form-title">New Employee Registration</h2>
+                    <input type="hidden" id="e-edit-id" value="">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">이름 *</label>
+                            <input type="text" id="e-name" placeholder="홍길동"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">부서 *</label>
+                            <select id="e-dept" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="">부서 선택</option>
+                                <option value="대표">대표</option>
+                                <option value="경영지원팀">경영지원팀</option>
+                                <option value="조리팀">조리팀</option>
+                                <option value="물류팀">물류팀</option>
+                                <option value="영업팀">영업팀</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">직책</label>
+                            <select id="e-position" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="">직책 선택</option>
+                                <option value="대표">대표</option>
+                                <option value="이사">이사</option>
+                                <option value="팀장">팀장</option>
+                                <option value="과장">과장</option>
+                                <option value="대리">대리</option>
+                                <option value="사원">사원</option>
+                                <option value="인턴">인턴</option>
+                                <option value="파트타임">파트타임</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">재직 상태</label>
+                            <select id="e-status" class="w-full border-2 border-[#B8D200] rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="재직중">재직중</option>
+                                <option value="수습중">수습중</option>
+                                <option value="휴직중">휴직중</option>
+                                <option value="퇴직">퇴직</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">연락처 (휴대폰)</label>
+                            <input type="tel" id="e-phone" placeholder="010-0000-0000"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">이메일 (로그인 계정)</label>
+                            <input type="email" id="e-email" placeholder="employee@company.com"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">입사일</label>
+                            <input type="date" id="e-hire"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">메모</label>
+                            <input type="text" id="e-memo" placeholder="특이사항, 담당 업무 등"
+                                class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="직원저장()" class="flex-1 bg-knight-blue text-white py-4 rounded-2xl font-black text-sm shadow-lg hover:opacity-90 transition-all">
+                            직원 등록
+                        </button>
+                        <button onclick="폼초기화()" id="cancel-btn" class="hidden px-6 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-sm hover:bg-gray-200 transition-all">
+                            취소
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 사이드 요약 -->
+            <aside class="space-y-5">
+                <div class="bg-knight-blue p-7 rounded-[2.5rem] text-white shadow-xl">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-5 italic">부서별 인원</h3>
+                    <div id="dept-summary" class="space-y-3">
+                        <p class="text-sm text-[#B8D200]/50 text-center">로딩 중...</p>
+                    </div>
+                </div>
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-4 italic">Quick Contact</h3>
+                    <div id="quick-contact" class="space-y-2">
+                        <p class="text-sm text-gray-400 text-center py-2">로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 직원 목록 -->
+        <section class="mt-8 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-black text-knight-blue uppercase tracking-widest">전체 직원 명단</h3>
+                <div class="flex gap-2">
+                    <button onclick="필터변경('전체')"      id="ftab-전체"      class="filter-tab px-4 py-2 bg-knight-blue text-white rounded-full font-black text-xs shadow-sm">전체</button>
+                    <button onclick="필터변경('조리팀')"    id="ftab-조리팀"    class="filter-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-knight-blue transition">조리팀</button>
+                    <button onclick="필터변경('물류팀')"    id="ftab-물류팀"    class="filter-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-knight-blue transition">물류팀</button>
+                    <button onclick="필터변경('경영지원팀')" id="ftab-경영지원팀" class="filter-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-knight-blue transition">경영지원팀</button>
+                    <button onclick="필터변경('영업팀')"    id="ftab-영업팀"    class="filter-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-knight-blue transition">영업팀</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="employee-grid">
+                <p class="text-sm text-gray-400 text-center py-8 col-span-3">로딩 중...</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    let 현재로그인유저 = '';
+    let 현재필터 = '전체';
+    let 전체직원목록 = [];
+
+    const DEPT_COLOR = {
+        '대표':      'bg-yellow-100 text-yellow-700',
+        '경영지원팀':'bg-purple-100 text-purple-700',
+        '조리팀':    'bg-green-100 text-green-700',
+        '물류팀':    'bg-blue-100 text-blue-700',
+        '영업팀':    'bg-orange-100 text-orange-700',
+    };
+    const DEPT_AVATAR = {
+        '대표':'#f59e0b', '경영지원팀':'#8b5cf6',
+        '조리팀':'#22c55e', '물류팀':'#3b82f6', '영업팀':'#f97316',
+    };
+    const STATUS_BADGE = {
+        '재직중':'bg-green-100 text-green-700',
+        '수습중':'bg-yellow-100 text-yellow-700',
+        '휴직중':'bg-gray-100 text-gray-500',
+        '퇴직':  'bg-red-100 text-red-500',
+    };
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+        document.getElementById('main-body').style.display = 'flex';
+        직원목록_불러오기();
+    }
+
+    async function 직원목록_불러오기() {
+        const { data } = await supabaseClient.from('employees').select('*').order('dept').order('name');
+        전체직원목록 = data || [];
+        직원그리드_렌더링();
+        사이드요약_렌더링();
+        const 재직자 = 전체직원목록.filter(e => e.status === '재직중' || e.status === '수습중').length;
+        document.getElementById('emp-count').innerText = `재직자 ${재직자}명`;
+    }
+
+    function 직원그리드_렌더링() {
+        const list = 현재필터 === '전체' ? 전체직원목록 : 전체직원목록.filter(e => e.dept === 현재필터);
+        const container = document.getElementById('employee-grid');
+        if (list.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8 col-span-3">등록된 직원이 없습니다.</p>';
+            return;
+        }
+        const canEdit = 현재로그인유저 === MASTER_ID || 현재로그인유저 === 최고관리자계정;
+        container.innerHTML = list.map(emp => {
+            const avatarColor = DEPT_AVATAR[emp.dept] || '#94a3b8';
+            const deptBadge   = DEPT_COLOR[emp.dept]  || 'bg-gray-100 text-gray-600';
+            const statusBadge = STATUS_BADGE[emp.status] || 'bg-gray-100 text-gray-500';
+            const tenure      = emp.hire_date ? 근속기간(emp.hire_date) : '';
+            return `
+            <div class="p-5 border border-gray-100 rounded-2xl hover:shadow-md transition-all bg-white">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0"
+                         style="background-color:${avatarColor}">${emp.name.charAt(0)}</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-black text-gray-900 truncate">${emp.name}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${deptBadge}">${emp.dept}</span>
+                            <span class="text-[10px] font-bold text-gray-400">${emp.position || ''}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-1 mb-3">
+                    ${emp.phone ? `<p class="text-xs text-gray-500 flex items-center gap-2">📞 ${emp.phone}</p>` : ''}
+                    ${emp.email ? `<p class="text-xs text-gray-500 flex items-center gap-2 truncate">✉️ ${emp.email}</p>` : ''}
+                    ${tenure    ? `<p class="text-xs text-gray-400 flex items-center gap-2">📅 ${emp.hire_date} (${tenure})</p>` : ''}
+                    ${emp.memo  ? `<p class="text-xs text-gray-400 italic truncate">${emp.memo}</p>` : ''}
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black px-2 py-0.5 rounded-full ${statusBadge}">${emp.status}</span>
+                    ${canEdit ? `<button onclick="직원수정로드(${emp.id},event)" class="text-[10px] text-knight-blue hover:underline font-bold">수정</button>` : ''}
+                    ${canEdit ? `<button onclick="직원삭제(${emp.id},event)" class="text-[10px] text-red-400 hover:text-red-600 font-bold ml-auto">삭제</button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function 사이드요약_렌더링() {
+        const deptMap = {};
+        전체직원목록.filter(e => e.status !== '퇴직').forEach(e => { deptMap[e.dept] = (deptMap[e.dept]||0)+1; });
+        document.getElementById('dept-summary').innerHTML = Object.entries(deptMap).length === 0
+            ? '<p class="text-sm text-[#B8D200]/50 text-center">등록된 직원 없음</p>'
+            : Object.entries(deptMap).map(([d,c]) => `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-white">${d}</span>
+                    <span class="text-sm font-black text-[#B8D200]">${c}명</span>
+                </div>`).join('');
+        const contacts = 전체직원목록.filter(e => e.phone && e.status !== '퇴직').slice(0,5);
+        document.getElementById('quick-contact').innerHTML = contacts.length === 0
+            ? '<p class="text-xs text-gray-400 text-center py-2">연락처 없음</p>'
+            : contacts.map(e => `
+                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div>
+                        <p class="text-xs font-black text-gray-900">${e.name}</p>
+                        <p class="text-[10px] text-gray-400">${e.dept} · ${e.position||''}</p>
+                    </div>
+                    <a href="tel:${e.phone}" class="text-xs font-black text-knight-blue">${e.phone}</a>
+                </div>`).join('');
+    }
+
+    async function 직원저장() {
+        const name     = document.getElementById('e-name').value.trim();
+        const dept     = document.getElementById('e-dept').value;
+        const position = document.getElementById('e-position').value;
+        const status   = document.getElementById('e-status').value;
+        const phone    = document.getElementById('e-phone').value.trim();
+        const email    = document.getElementById('e-email').value.trim();
+        const hire     = document.getElementById('e-hire').value;
+        const memo     = document.getElementById('e-memo').value.trim();
+        const editId   = document.getElementById('e-edit-id').value;
+        if (!name || !dept) { alert('이름과 부서는 필수입니다.'); return; }
+        const payload = { name, dept, position, status, phone, email, hire_date: hire||null, memo };
+        let error;
+        if (editId) { ({ error } = await supabaseClient.from('employees').update(payload).eq('id', editId)); }
+        else        { ({ error } = await supabaseClient.from('employees').insert([payload])); }
+        if (error) { alert('저장 실패: ' + error.message); return; }
+        alert(editId ? '직원 정보가 수정되었습니다.' : '직원이 등록되었습니다!');
+        폼초기화();
+        직원목록_불러오기();
+    }
+
+    function 직원수정로드(id, e) {
+        e.stopPropagation();
+        const emp = 전체직원목록.find(x => x.id === id);
+        if (!emp) return;
+        document.getElementById('e-edit-id').value  = id;
+        document.getElementById('e-name').value     = emp.name;
+        document.getElementById('e-dept').value     = emp.dept;
+        document.getElementById('e-position').value = emp.position||'';
+        document.getElementById('e-status').value   = emp.status;
+        document.getElementById('e-phone').value    = emp.phone||'';
+        document.getElementById('e-email').value    = emp.email||'';
+        document.getElementById('e-hire').value     = emp.hire_date||'';
+        document.getElementById('e-memo').value     = emp.memo||'';
+        document.getElementById('form-title').innerText = `Edit — ${emp.name}`;
+        document.querySelector('button[onclick="직원저장()"]').innerText = '수정 저장';
+        document.getElementById('cancel-btn').classList.remove('hidden');
+        window.scrollTo({ top:0, behavior:'smooth' });
+    }
+
+    function 폼초기화() {
+        ['e-edit-id','e-name','e-phone','e-email','e-hire','e-memo'].forEach(id => document.getElementById(id).value='');
+        document.getElementById('e-dept').value=''; document.getElementById('e-position').value=''; document.getElementById('e-status').value='재직중';
+        document.getElementById('form-title').innerText='New Employee Registration';
+        document.querySelector('button[onclick="직원저장()"]').innerText='직원 등록';
+        document.getElementById('cancel-btn').classList.add('hidden');
+    }
+
+    async function 직원삭제(id, e) {
+        e.stopPropagation();
+        if (!confirm('이 직원 정보를 삭제하시겠습니까?')) return;
+        await supabaseClient.from('employees').delete().eq('id', id);
+        직원목록_불러오기();
+    }
+
+    function 필터변경(dept) {
+        현재필터 = dept;
+        document.querySelectorAll('.filter-tab').forEach(btn => {
+            const t = btn.id.replace('ftab-','');
+            btn.className = `filter-tab px-4 py-2 rounded-full font-black text-xs transition ${
+                t===dept ? 'bg-knight-blue text-white shadow-sm' : 'bg-white text-gray-500 border hover:border-knight-blue'
+            }`;
+        });
+        직원그리드_렌더링();
+    }
+
+    function 근속기간(dateStr) {
+        const months = (new Date().getFullYear()-new Date(dateStr).getFullYear())*12 + (new Date().getMonth()-new Date(dateStr).getMonth());
+        if (months<1) return '신입';
+        if (months<12) return `${months}개월`;
+        const y=Math.floor(months/12), r=months%12;
+        return r>0 ? `${y}년 ${r}개월` : `${y}년`;
+    }
+
+    로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

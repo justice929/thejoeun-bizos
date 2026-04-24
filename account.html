@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 계정과목 마스터</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Accounting Settings</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">계정과목 <span class="text-knight-blue">마스터 관리</span></h2>
+            </div>
+            <button onclick="계정저장()" class="bg-knight-blue text-white px-8 py-3 rounded-xl font-black text-sm hover:opacity-90 shadow-lg transition-all">신규 항목 등록</button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-8 italic">Account Registration</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">계정 코드 (Account Code)</label>
+                            <input type="text" id="a-code" placeholder="예: 811 (또는 01)" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-2 uppercase text-knight-blue">계정 과목명 (Title)</label>
+                            <input type="text" id="a-name" placeholder="예: 복리후생비, 여비교통비" class="w-full border-2 border-knight-blue/30 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none transition-all shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">항목 설명 및 적요 (Description)</label>
+                        <input type="text" id="a-desc" placeholder="예: 직원 식대, 회식비, 야근 교통비 등" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-6 italic">Account List</h3>
+                    <div id="account-list" class="space-y-3">
+                        <p class="text-sm font-bold text-gray-400 text-center py-10">데이터 로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            목록불러오기();
+        }
+
+        async function 계정저장() {
+            const code = document.getElementById('a-code').value;
+            const name = document.getElementById('a-name').value;
+            const desc = document.getElementById('a-desc').value;
+
+            if(!code || !name) {
+                alert("계정 코드와 과목명은 필수 입력 사항입니다.");
+                return;
+            }
+
+            const { error } = await supabaseClient.from('account_master').insert([{
+                account_code: code,
+                account_name: name,
+                description: desc,
+                processor: 현재로그인유저
+            }]);
+
+            if (error) {
+                if(error.message.includes("duplicate key")) alert("이미 등록된 계정 코드입니다.");
+                else alert("저장 실패: " + error.message);
+            } else {
+                alert(`[${name}] 항목이 마스터에 성공적으로 등록되었습니다! 🚀`);
+                document.getElementById('a-code').value = '';
+                document.getElementById('a-name').value = '';
+                document.getElementById('a-desc').value = '';
+                목록불러오기();
+            }
+        }
+
+        async function 계정삭제(code) {
+            if(!confirm(`계정코드 [${code}] 항목을 정말 삭제하시겠습니까?\n(삭제 시 지출결의서 선택창에서 사라집니다.)`)) return;
+
+            const { error } = await supabaseClient.from('account_master').delete().eq('account_code', code);
+
+            if (error) alert("삭제 실패: " + error.message);
+            else {
+                alert("삭제가 완료되었습니다.");
+                목록불러오기();
+            }
+        }
+
+        async function 목록불러오기() {
+            // 코드 순서대로 정렬해서 가져옵니다.
+            const { data } = await supabaseClient.from('account_master').select('*').order('account_code', { ascending: true });
+            const container = document.getElementById('account-list');
+            if (data && data.length > 0) {
+                let html = '';
+                data.forEach(a => {
+                    const isOwner = 현재로그인유저 === a.processor;
+                    const isMaster = 현재로그인유저 === MASTER_ID;
+                    const canDelete = isOwner || isMaster;
+
+                    const deleteBtnHtml = canDelete 
+                        ? `<button onclick="계정삭제('${a.account_code}')" class="text-[10px] text-red-500 hover:text-red-700 font-bold ml-3 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition-colors">삭제</button>` 
+                        : ``;
+
+                    html += `
+                    <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex justify-between items-center transition-all hover:bg-white mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2 py-1 bg-knight-blue/10 text-knight-blue rounded text-[10px] font-black">${a.account_code}</span>
+                                <p class="text-sm font-bold text-gray-900">${a.account_name}</p>
+                            </div>
+                            <p class="text-[10px] font-bold text-gray-400 truncate">${a.description || '설명 없음'}</p>
+                        </div>
+                        <div class="flex items-center">
+                            ${deleteBtnHtml}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-10">등록된 계정과목이 없습니다.</p>';
+            }
+        }
+
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

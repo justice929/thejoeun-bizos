@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#152484">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { 'knight-blue': '#152484', 'knight-green': '#B8D200' } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 상품 마스터</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Master Data Hub</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">상품 <span class="text-knight-blue">마스터 관리</span></h2>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6 italic">New Product Registration</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-knight-blue mb-2 uppercase">1. 상품 코드 (자동 부여)</label>
+                            <input type="text" id="p-code" readonly class="w-full border-2 border-knight-blue/20 rounded-2xl p-4 text-sm font-black bg-knight-blue/5 text-knight-blue outline-none cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">2. 대분류 (카테고리)</label>
+                            <select id="p-cat" onchange="카테고리연동()" class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="공산">공산 (가공식품 등)</option>
+                                <option value="농산">농산 (채소, 과일 등)</option>
+                                <option value="수산">수산 (해산물 등)</option>
+                                <option value="축산">축산 (육류 등)</option>
+                                <option value="기타">기타 부자재</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">3. 과세 여부 (자동 연동)</label>
+                            <select id="p-tax" class="w-full border-2 border-[#B8D200] rounded-2xl p-4 text-sm font-black bg-white focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="true">과세 (10%)</option>
+                                <option value="false">면세</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">4. 상품명 (Item Name)</label>
+                        <input type="text" id="p-name" placeholder="예: 신동진 쌀 20kg" class="w-full border-2 border-gray-200 rounded-2xl p-4 text-lg font-black bg-white focus:border-knight-blue outline-none shadow-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">규격 (옵션)</label>
+                            <input type="text" id="p-spec" placeholder="예: 20kg, 1box" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">단위</label>
+                            <input type="text" id="p-unit" value="EA" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">박스당 수량(입수)</label>
+                            <input type="number" id="p-box" value="1" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none text-right">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-orange-500 mb-2 uppercase">⏳ 보관기간 (일수)</label>
+                            <input type="number" id="p-shelf" placeholder="예: 7, 30, 365" class="w-full border-2 border-orange-200 rounded-2xl p-4 text-sm font-bold bg-orange-50 focus:border-orange-400 outline-none text-right">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-knight-blue mb-2 uppercase">기본 매입 원가 (₩)</label>
+                            <input type="number" id="p-price" placeholder="0" class="w-full border-2 border-knight-blue/30 rounded-2xl p-4 text-xl font-black bg-white focus:border-knight-blue outline-none shadow-sm text-right text-knight-blue">
+                        </div>
+                        <div class="relative">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase">기본 매입처 (초성 검색)</label>
+                                <button onclick="window.location.href='partner.html'" class="text-[10px] font-black text-knight-blue bg-[#B8D200]/30 hover:bg-[#B8D200] px-2 py-1 rounded transition-colors shadow-sm">
+                                    ➕ 새 거래처 등록
+                                </button>
+                            </div>
+                            <input type="text" id="p-vendor" placeholder="거래처명 초성 입력" class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm font-bold bg-white focus:border-knight-blue outline-none" onfocus="거래처검색()" oninput="거래처검색()">
+                            <ul id="vendor-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-knight-blue rounded-xl shadow-xl max-h-40 overflow-y-auto divide-y divide-gray-100"></ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">🖼️ 상품 이미지 URL (고객 포털 노출용)</label>
+                        <div class="flex gap-3 items-start">
+                            <input type="url" id="p-image" placeholder="https://... 이미지 주소를 붙여넣으세요"
+                                class="flex-1 border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none" oninput="이미지미리보기()">
+                            <div class="w-20 h-20 rounded-2xl border-2 border-gray-100 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                <img id="p-image-preview" src="" alt="" class="w-full h-full object-cover hidden">
+                                <span id="p-image-placeholder" class="text-2xl">📷</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">※ 구글 이미지 등에서 이미지 주소 복사 후 붙여넣기. 향후 직접 업로드 기능 추가 예정.</p>
+                    </div>
+
+                    <button onclick="상품저장()" class="w-full bg-knight-blue text-white py-5 rounded-3xl font-black text-lg hover:opacity-90 shadow-xl transition-all flex justify-center items-center gap-2">
+                        <span>마스터에 신규 상품 등록</span>
+                    </button>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-6 italic">Product List</h3>
+                    <div class="relative mb-4">
+                        <input type="text" id="list-search" placeholder="상품명 검색..." onkeyup="상품목록불러오기()" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                    </div>
+                    <div id="product-list" class="space-y-3 h-[600px] overflow-y-auto pr-2">
+                        <p class="text-sm font-bold text-gray-400 text-center py-10">데이터 로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+        let 매입처DB = [];
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            
+            await 다음코드생성(); 
+            await 거래처동기화();
+            상품목록불러오기();
+        }
+
+        // 💡 1. 다음 상품코드 자동 생성 (예: P1001 -> P1002)
+        async function 다음코드생성() {
+            const { data } = await supabaseClient.from('product_master').select('product_code').order('product_code', { ascending: false }).limit(1);
+            let nextCode = 'P1000'; // 최초 등록 시 기본값
+            
+            if (data && data.length > 0 && data[0].product_code) {
+                const lastCode = data[0].product_code;
+                // 문자열에서 숫자만 추출
+                const numPart = parseInt(lastCode.replace(/[^0-9]/g, ''));
+                if (!isNaN(numPart)) {
+                    nextCode = 'P' + (numPart + 1);
+                }
+            }
+            document.getElementById('p-code').value = nextCode;
+        }
+
+        // 💡 2. 대분류 선택 시 면세 자동 연동
+        function 카테고리연동() {
+            const cat = document.getElementById('p-cat').value;
+            const taxSelect = document.getElementById('p-tax');
+            
+            if (cat === '농산' || cat === '수산' || cat === '축산') {
+                taxSelect.value = 'false'; // 면세 자동 선택
+                taxSelect.classList.replace('border-gray-200', 'border-orange-400'); // 시각적 피드백
+            } else {
+                taxSelect.value = 'true';  // 과세 자동 선택
+                taxSelect.classList.replace('border-orange-400', 'border-[#B8D200]');
+            }
+        }
+
+        async function 거래처동기화() {
+            const { data } = await supabaseClient.from('partner_master').select('company_name').eq('partner_type', '매입처');
+            if (data) 매입처DB = data.map(v => v.company_name);
+        }
+
+        function 거래처검색() {
+            const kw = document.getElementById('p-vendor').value.toLowerCase().replace(/\s/g, '');
+            const cho = 초성추출(kw);
+            const list = 매입처DB.filter(c => c.toLowerCase().replace(/\s/g, '').includes(kw) || 초성추출(c).includes(cho));
+            let html = '';
+            list.forEach(c => html += `<li onclick="거래처선택('${c}')" class="p-3 hover:bg-knight-blue/10 cursor-pointer text-sm font-bold">${c}</li>`);
+            document.getElementById('vendor-dropdown').innerHTML = html || '<li class="p-3 text-xs text-gray-400">등록된 매입처 없음</li>';
+            document.getElementById('vendor-dropdown').classList.remove('hidden');
+        }
+
+        function 거래처선택(n) { 
+            document.getElementById('p-vendor').value = n; 
+            document.getElementById('vendor-dropdown').classList.add('hidden'); 
+        }
+
+        document.addEventListener('click', e => {
+            const vInput = document.getElementById('p-vendor');
+            const vDrop = document.getElementById('vendor-dropdown');
+            if (vInput && vDrop && !vInput.contains(e.target) && !vDrop.contains(e.target)) vDrop.classList.add('hidden');
+        });
+
+        // 💡 상품 저장
+        async function 상품저장() {
+            const code = document.getElementById('p-code').value;
+            const name = document.getElementById('p-name').value;
+            const cat = document.getElementById('p-cat').value;
+            const tax = document.getElementById('p-tax').value === 'true'; // boolean 변환
+            const spec = document.getElementById('p-spec').value;
+            const unit = document.getElementById('p-unit').value;
+            const box = Number(document.getElementById('p-box').value) || 1;
+            const price = Number(document.getElementById('p-price').value) || 0;
+            const vendor = document.getElementById('p-vendor').value;
+            const shelf    = Number(document.getElementById('p-shelf').value) || 0;
+            const imageUrl = document.getElementById('p-image').value.trim() || null;
+
+            if(!name || !price) { alert("상품명과 기본 원가는 필수입니다."); return; }
+
+            const { error } = await supabaseClient.from('product_master').insert([{
+                product_code: code, item_name: name, category: cat, is_taxable: tax,
+                specification: spec, unit: unit, box_qty: box, base_price: price,
+                default_vendor: vendor, shelf_days: shelf, image_url: imageUrl,
+                processor: 현재로그인유저
+            }]);
+
+            if (error) {
+                if(error.message.includes('duplicate key')) alert("이미 존재하는 상품 코드입니다. 새로고침 후 다시 시도하세요.");
+                else alert("저장 실패: " + error.message);
+            } else {
+                alert("상품 마스터에 등록되었습니다! 🚀");
+                
+                // 폼 초기화 및 다음 번호 따오기
+                document.getElementById('p-name').value = '';
+                document.getElementById('p-spec').value = '';
+                document.getElementById('p-price').value = '';
+                document.getElementById('p-vendor').value = '';
+                document.getElementById('p-image').value = '';
+                이미지미리보기();
+                
+                await 다음코드생성();
+                상품목록불러오기();
+            }
+        }
+
+        async function 상품삭제(code) {
+            if(!confirm("이 상품을 마스터에서 삭제하시겠습니까?")) return;
+            await supabaseClient.from('product_master').delete().eq('product_code', code);
+            await 다음코드생성(); // 혹시 마지막 번호가 지워졌을 수 있으므로 재계산
+            상품목록불러오기();
+        }
+
+        // 💡 우측 리스트 불러오기 (검색어 필터 지원)
+        async function 상품목록불러오기() {
+            const searchKw = document.getElementById('list-search').value;
+            let query = supabaseClient.from('product_master').select('*').order('created_at', { ascending: false });
+            
+            if (searchKw) { query = query.ilike('item_name', `%${searchKw}%`); } // 이름으로 필터링
+
+            const { data } = await query;
+            const container = document.getElementById('product-list');
+            
+            if (data && data.length > 0) {
+                let html = '';
+                data.forEach(d => {
+                    const taxBadge = d.is_taxable ? '<span class="bg-gray-200 text-gray-500 px-1 rounded text-[9px]">과세</span>' : '<span class="bg-orange-100 text-orange-500 px-1 rounded text-[9px]">면세</span>';
+                    const canDel = 현재로그인유저 === d.processor || 현재로그인유저 === MASTER_ID;
+                    
+                    html += `
+                    <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex justify-between items-center mb-3 transition hover:bg-white">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] bg-knight-blue text-white px-2 py-0.5 rounded font-black">${d.product_code}</span>
+                                <p class="text-sm font-bold text-gray-900">${d.item_name}</p>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-1">${d.category} ${taxBadge} | ${d.default_vendor || '매입처 미지정'} ${d.shelf_days ? `| 보관 <span class="text-orange-500 font-black">${d.shelf_days}일</span>` : ''}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-black text-knight-blue">₩${d.base_price.toLocaleString()}</p>
+                            ${canDel ? `<button onclick="상품삭제('${d.product_code}')" class="text-[10px] text-red-400 hover:text-red-600 font-bold mt-1">삭제</button>` : ''}
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-10">검색 결과가 없습니다.</p>';
+            }
+        }
+
+        function 이미지미리보기() {
+            const url = document.getElementById('p-image').value.trim();
+            const img = document.getElementById('p-image-preview');
+            const placeholder = document.getElementById('p-image-placeholder');
+            if (url) { img.src = url; img.classList.remove('hidden'); placeholder.classList.add('hidden'); }
+            else { img.src = ''; img.classList.add('hidden'); placeholder.classList.remove('hidden'); }
+        }
+
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

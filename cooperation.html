@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 협조문</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Internal Cooperation</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">협조문 <span class="text-knight-blue">상신</span></h2>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-[#B8D200]"></div>
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6 italic">New Cooperation Request</h2>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">수신 부서</label>
+                            <select id="c-dept" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none cursor-pointer">
+                                <option value="">수신 부서 선택</option>
+                                <option value="조리팀">조리팀</option>
+                                <option value="물류팀">물류팀</option>
+                                <option value="경영지원팀">경영지원팀</option>
+                                <option value="영업팀">영업팀</option>
+                                <option value="전 부서">전 부서</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">협조 제목</label>
+                            <input type="text" id="c-title" placeholder="협조 사항의 핵심 내용을 적어주세요" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">협조 내용</label>
+                            <textarea id="c-content" rows="8" placeholder="상세한 협조 요청 내용을 입력하세요." class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none resize-none transition-all"></textarea>
+                        </div>
+                    </div>
+
+                    <button onclick="협조문상신()" class="w-full mt-6 bg-knight-blue text-white py-5 rounded-3xl font-black text-lg hover:opacity-90 shadow-xl transition-all flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        협조 요청 상신
+                    </button>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-5 italic">My Requests</h3>
+                    <div id="my-list" class="space-y-3">
+                        <p class="text-sm text-gray-400 text-center py-8">로딩 중...</p>
+                    </div>
+                </div>
+
+                <div class="bg-knight-blue p-7 rounded-[2.5rem] text-white shadow-xl">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-5 italic">All Cooperation</h3>
+                    <div id="all-list" class="space-y-3">
+                        <p class="text-sm text-[#B8D200]/60 text-center py-4">로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            내목록_불러오기();
+            전체목록_불러오기();
+        }
+
+        async function 협조문상신() {
+            const dept    = document.getElementById('c-dept').value;
+            const title   = document.getElementById('c-title').value.trim();
+            const content = document.getElementById('c-content').value.trim();
+
+            if (!dept)    { alert("수신 부서를 선택해 주세요."); return; }
+            if (!title)   { alert("협조 제목을 입력해 주세요."); return; }
+            if (!content) { alert("협조 내용을 입력해 주세요."); return; }
+
+            const { error } = await supabaseClient.from('cooperation_requests').insert([{
+                requester: 현재로그인유저,
+                recipient_dept: dept,
+                title: title,
+                content: content,
+                status: '발송완료'
+            }]);
+
+            if (error) {
+                alert("상신 실패: " + error.message);
+            } else {
+                alert("협조문이 성공적으로 상신되었습니다!");
+                document.getElementById('c-dept').value = '';
+                document.getElementById('c-title').value = '';
+                document.getElementById('c-content').value = '';
+                내목록_불러오기();
+                전체목록_불러오기();
+            }
+        }
+
+        async function 협조문취소(id) {
+            if (!confirm("이 협조문을 취소하시겠습니까?")) return;
+            await supabaseClient.from('cooperation_requests').delete().eq('id', id);
+            내목록_불러오기();
+            전체목록_불러오기();
+        }
+
+        async function 내목록_불러오기() {
+            const { data } = await supabaseClient
+                .from('cooperation_requests')
+                .select('*')
+                .eq('requester', 현재로그인유저)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            const container = document.getElementById('my-list');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">상신한 협조문이 없습니다.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(d => `
+                <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-sm transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-black bg-knight-blue/10 text-knight-blue px-2 py-1 rounded">${d.recipient_dept}</span>
+                        <button onclick="협조문취소(${d.id})" class="text-[10px] text-red-400 hover:text-red-600 font-bold bg-red-50 px-2 py-1 rounded">취소</button>
+                    </div>
+                    <p class="text-sm font-bold text-gray-900 truncate">${d.title}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">${new Date(d.created_at).toLocaleDateString('ko-KR')}</p>
+                </div>
+            `).join('');
+        }
+
+        async function 전체목록_불러오기() {
+            const { data } = await supabaseClient
+                .from('cooperation_requests')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(8);
+
+            const container = document.getElementById('all-list');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-sm text-[#B8D200]/60 text-center py-4">등록된 협조문이 없습니다.</p>';
+                return;
+            }
+
+            container.innerHTML = data.map(d => `
+                <div class="flex items-start gap-3 py-3 border-b border-white/10 last:border-0">
+                    <div class="w-8 h-8 rounded-full bg-[#B8D200]/20 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-[#B8D200]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-white truncate">${d.title}</p>
+                        <p class="text-[10px] text-gray-400">${d.requester} → ${d.recipient_dept}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

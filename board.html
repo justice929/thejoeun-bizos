@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 사내 게시판</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        .text-knight-blue { color: var(--knight-blue); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+        .slide-up { animation: slideUp 0.25s ease; }
+        .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display:none;">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-6 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Knight's Communication</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">사내 <span class="text-knight-blue">게시판</span></h2>
+            </div>
+            <span id="user-name-display" class="text-xs font-bold text-gray-500 hidden md:block"></span>
+        </header>
+
+        <!-- 부서 필터 탭 -->
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-1" id="dept-tabs">
+            <button onclick="필터변경('전체')"   id="tab-전체"   class="dept-tab px-5 py-2 bg-knight-blue text-white rounded-full font-black text-xs shadow-md whitespace-nowrap">전체</button>
+            <button onclick="필터변경('공지')"   id="tab-공지"   class="dept-tab px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-knight-blue transition whitespace-nowrap">📢 공지</button>
+            <button onclick="필터변경('조리팀')" id="tab-조리팀" class="dept-tab px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-green-500 transition whitespace-nowrap">조리팀</button>
+            <button onclick="필터변경('물류팀')" id="tab-물류팀" class="dept-tab px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-blue-500 transition whitespace-nowrap">물류팀</button>
+            <button onclick="필터변경('경영지원팀')" id="tab-경영지원팀" class="dept-tab px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-purple-500 transition whitespace-nowrap">경영지원팀</button>
+            <button onclick="필터변경('영업팀')" id="tab-영업팀" class="dept-tab px-5 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs hover:border-orange-500 transition whitespace-nowrap">영업팀</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- 게시글 목록 -->
+            <div class="lg:col-span-2">
+                <div id="post-list" class="space-y-4">
+                    <p class="text-sm text-gray-400 text-center py-12">게시글을 불러오는 중...</p>
+                </div>
+                <div id="load-more-wrap" class="hidden mt-6 text-center">
+                    <button onclick="더보기()" class="px-8 py-3 bg-white border-2 border-gray-200 text-gray-500 rounded-full font-black text-sm hover:border-knight-blue hover:text-knight-blue transition">더 보기</button>
+                </div>
+            </div>
+
+            <!-- 글쓰기 패널 -->
+            <aside>
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 sticky top-8">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-5 italic">New Post</h2>
+                    <div class="space-y-4">
+                        <select id="w-dept" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none cursor-pointer">
+                            <option value="">부서/카테고리 선택</option>
+                            <option value="공지">📢 공지</option>
+                            <option value="조리팀">조리팀</option>
+                            <option value="물류팀">물류팀</option>
+                            <option value="경영지원팀">경영지원팀</option>
+                            <option value="영업팀">영업팀</option>
+                            <option value="자유">자유</option>
+                        </select>
+                        <input type="text" id="w-title" placeholder="제목을 입력하세요"
+                            class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none transition-all">
+                        <textarea id="w-content" rows="6" placeholder="내용을 입력하세요..."
+                            class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-medium bg-gray-50 focus:border-knight-blue outline-none resize-none transition-all"></textarea>
+                        <button onclick="게시글작성()" class="w-full bg-knight-blue text-white py-4 rounded-2xl font-black text-sm shadow-lg hover:opacity-90 transition-all">
+                            공유하기 (SHARE)
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- 게시글 상세 모달 -->
+    <div id="post-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] slide-up">
+            <!-- 모달 헤더 -->
+            <div class="p-8 border-b border-gray-100 flex-shrink-0">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span id="m-dept-badge" class="text-[10px] font-black px-3 py-1 rounded-full"></span>
+                            <span id="m-time" class="text-[10px] text-gray-400 font-bold"></span>
+                        </div>
+                        <h2 id="m-title" class="text-xl font-black text-gray-900 leading-snug"></h2>
+                        <p id="m-author" class="text-xs font-bold text-gray-400 mt-2"></p>
+                    </div>
+                    <button onclick="모달닫기()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition flex-shrink-0">
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 본문 -->
+            <div class="p-8 flex-1 overflow-y-auto">
+                <p id="m-content" class="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-wrap mb-8"></p>
+
+                <!-- 댓글 영역 -->
+                <div class="border-t border-gray-100 pt-6">
+                    <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-4">댓글</h3>
+                    <div id="m-comments" class="space-y-4 mb-6"></div>
+
+                    <!-- 댓글 작성 -->
+                    <div class="flex gap-3 items-end">
+                        <textarea id="c-content" rows="2" placeholder="댓글을 입력하세요..."
+                            class="flex-1 border-2 border-gray-100 rounded-2xl p-3 text-sm font-medium bg-gray-50 focus:border-knight-blue outline-none resize-none"></textarea>
+                        <button onclick="댓글작성()" class="bg-knight-blue text-white px-5 py-3 rounded-2xl font-black text-xs hover:opacity-90 transition whitespace-nowrap">
+                            등록
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 삭제 버튼 (본인/마스터만) -->
+            <div id="m-delete-wrap" class="hidden px-8 pb-6 flex-shrink-0">
+                <button onclick="게시글삭제()" class="text-xs text-red-500 font-black bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition">게시글 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    let 현재로그인유저  = '';
+    let 현재로그인이름  = '';
+    let 현재필터        = '전체';
+    let 현재모달포스트ID = null;
+    let 페이지오프셋    = 0;
+    const PER_PAGE      = 10;
+
+    // 부서별 색상 맵
+    const DEPT_STYLE = {
+        '공지':      'bg-knight-blue text-white',
+        '조리팀':    'bg-green-100 text-green-700',
+        '물류팀':    'bg-blue-100 text-blue-700',
+        '경영지원팀':'bg-purple-100 text-purple-700',
+        '영업팀':    'bg-orange-100 text-orange-700',
+        '자유':      'bg-gray-100 text-gray-600',
+    };
+
+    const TAB_ACTIVE = {
+        '전체':      'bg-knight-blue text-white shadow-md',
+        '공지':      'bg-knight-blue text-white shadow-md',
+        '조리팀':    'bg-green-500 text-white shadow-md',
+        '물류팀':    'bg-blue-500 text-white shadow-md',
+        '경영지원팀':'bg-purple-500 text-white shadow-md',
+        '영업팀':    'bg-orange-500 text-white shadow-md',
+    };
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+
+        // 직원 테이블에서 이름 조회
+        const { data: emp } = await supabaseClient
+            .from('employees').select('name').eq('email', 현재로그인유저).maybeSingle();
+        현재로그인이름 = emp?.name || 현재로그인유저.split('@')[0];
+        document.getElementById('user-name-display').innerText = `${현재로그인이름} 님`;
+        document.getElementById('main-body').style.display = 'flex';
+        게시글목록_불러오기(true);
+    }
+
+    // ── 게시글 목록 ────────────────────────────────────────────
+    async function 게시글목록_불러오기(reset = false) {
+        if (reset) 페이지오프셋 = 0;
+
+        let query = supabaseClient
+            .from('board_posts')
+            .select('*, board_comments(count)', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(페이지오프셋, 페이지오프셋 + PER_PAGE - 1);
+
+        if (현재필터 !== '전체') query = query.eq('dept', 현재필터);
+
+        const { data, count } = await query;
+        const posts = data || [];
+
+        const container = document.getElementById('post-list');
+        if (reset) container.innerHTML = '';
+
+        if (posts.length === 0 && reset) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-12">아직 게시글이 없습니다. 첫 글을 작성해보세요!</p>';
+            document.getElementById('load-more-wrap').classList.add('hidden');
+            return;
+        }
+
+        posts.forEach(post => {
+            const commentCnt = post.board_comments?.[0]?.count ?? 0;
+            const deptStyle  = DEPT_STYLE[post.dept] || 'bg-gray-100 text-gray-600';
+            const timeStr    = 시간표시(post.created_at);
+            const preview    = (post.content || '').substring(0, 80);
+
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer slide-up';
+            card.onclick = () => 게시글열기(post.id);
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-[10px] font-black px-3 py-1 rounded-full ${deptStyle}">${post.dept}</span>
+                    <span class="text-[10px] font-bold text-gray-400">${timeStr}</span>
+                </div>
+                <h3 class="text-base font-black text-gray-900 mb-2 leading-snug">${post.title}</h3>
+                <p class="text-sm text-gray-500 line-clamp-2 leading-relaxed">${preview}${post.content?.length > 80 ? '...' : ''}</p>
+                <div class="flex items-center justify-between mt-4">
+                    <span class="text-xs font-bold text-gray-400">${post.author_name || post.author.split('@')[0]}</span>
+                    <span class="flex items-center gap-1 text-xs text-gray-400 font-bold">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        ${commentCnt}
+                    </span>
+                </div>`;
+            container.appendChild(card);
+        });
+
+        페이지오프셋 += posts.length;
+        const 더있음 = count > 페이지오프셋;
+        document.getElementById('load-more-wrap').classList.toggle('hidden', !더있음);
+    }
+
+    function 더보기() { 게시글목록_불러오기(false); }
+
+    // ── 필터 탭 ────────────────────────────────────────────────
+    function 필터변경(dept) {
+        현재필터 = dept;
+        document.querySelectorAll('.dept-tab').forEach(btn => {
+            const t = btn.id.replace('tab-', '');
+            const isActive = t === dept;
+            btn.className = `dept-tab px-5 py-2 rounded-full font-black text-xs whitespace-nowrap transition ${
+                isActive ? (TAB_ACTIVE[t] || 'bg-knight-blue text-white shadow-md') : 'bg-white text-gray-500 border hover:border-knight-blue'
+            }`;
+        });
+        게시글목록_불러오기(true);
+    }
+
+    // ── 글쓰기 ─────────────────────────────────────────────────
+    async function 게시글작성() {
+        const dept    = document.getElementById('w-dept').value;
+        const title   = document.getElementById('w-title').value.trim();
+        const content = document.getElementById('w-content').value.trim();
+
+        if (!dept)    { alert('부서/카테고리를 선택해 주세요.'); return; }
+        if (!title)   { alert('제목을 입력해 주세요.'); return; }
+        if (!content) { alert('내용을 입력해 주세요.'); return; }
+
+        const { error } = await supabaseClient.from('board_posts').insert([{
+            author: 현재로그인유저,
+            author_name: 현재로그인이름,
+            dept, title, content
+        }]);
+
+        if (error) { alert('등록 실패: ' + error.message); return; }
+
+        document.getElementById('w-dept').value = '';
+        document.getElementById('w-title').value = '';
+        document.getElementById('w-content').value = '';
+        필터변경(dept);
+    }
+
+    // ── 게시글 상세 모달 ───────────────────────────────────────
+    async function 게시글열기(id) {
+        현재모달포스트ID = id;
+        const { data: post } = await supabaseClient
+            .from('board_posts').select('*').eq('id', id).single();
+        if (!post) return;
+
+        const deptStyle = DEPT_STYLE[post.dept] || 'bg-gray-100 text-gray-600';
+        document.getElementById('m-dept-badge').className = `text-[10px] font-black px-3 py-1 rounded-full ${deptStyle}`;
+        document.getElementById('m-dept-badge').innerText  = post.dept;
+        document.getElementById('m-title').innerText       = post.title;
+        document.getElementById('m-content').innerText     = post.content;
+        document.getElementById('m-author').innerText      = `${post.author_name || post.author.split('@')[0]}`;
+        document.getElementById('m-time').innerText        = 시간표시(post.created_at);
+        document.getElementById('c-content').value        = '';
+
+        // 삭제 버튼 (본인 or 마스터)
+        const canDel = 현재로그인유저 === post.author || 현재로그인유저 === 최고관리자계정 || 현재로그인유저 === MASTER_ID;
+        document.getElementById('m-delete-wrap').classList.toggle('hidden', !canDel);
+
+        댓글불러오기(id);
+
+        const modal = document.getElementById('post-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function 모달닫기() {
+        const modal = document.getElementById('post-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        현재모달포스트ID = null;
+    }
+
+    // 모달 바깥 클릭 시 닫기
+    document.getElementById('post-modal').addEventListener('click', e => {
+        if (e.target === document.getElementById('post-modal')) 모달닫기();
+    });
+
+    async function 게시글삭제() {
+        if (!confirm('이 게시글을 삭제하시겠습니까?')) return;
+        await supabaseClient.from('board_posts').delete().eq('id', 현재모달포스트ID);
+        모달닫기();
+        게시글목록_불러오기(true);
+    }
+
+    // ── 댓글 ───────────────────────────────────────────────────
+    async function 댓글불러오기(postId) {
+        const { data } = await supabaseClient
+            .from('board_comments')
+            .select('*')
+            .eq('post_id', postId)
+            .order('created_at', { ascending: true });
+
+        const container = document.getElementById('m-comments');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-400 py-2">아직 댓글이 없습니다.</p>';
+            return;
+        }
+
+        container.innerHTML = data.map(c => `
+            <div class="flex gap-3">
+                <div class="w-8 h-8 rounded-full bg-knight-blue/10 flex items-center justify-center flex-shrink-0">
+                    <span class="text-[10px] font-black text-knight-blue">${(c.author_name || c.author.split('@')[0]).charAt(0)}</span>
+                </div>
+                <div class="flex-1 bg-gray-50 rounded-2xl p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-black text-gray-700">${c.author_name || c.author.split('@')[0]}</span>
+                        <span class="text-[10px] text-gray-400">${시간표시(c.created_at)}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed">${c.content}</p>
+                </div>
+            </div>`).join('');
+    }
+
+    async function 댓글작성() {
+        const content = document.getElementById('c-content').value.trim();
+        if (!content || !현재모달포스트ID) return;
+
+        const { error } = await supabaseClient.from('board_comments').insert([{
+            post_id: 현재모달포스트ID,
+            author: 현재로그인유저,
+            author_name: 현재로그인이름,
+            content
+        }]);
+
+        if (error) { alert('댓글 등록 실패: ' + error.message); return; }
+        document.getElementById('c-content').value = '';
+        댓글불러오기(현재모달포스트ID);
+    }
+
+    // ── 유틸 ───────────────────────────────────────────────────
+    function 시간표시(isoStr) {
+        const d = new Date(isoStr);
+        const now = new Date();
+        const diff = Math.floor((now - d) / 1000);
+        if (diff < 60)       return '방금 전';
+        if (diff < 3600)     return `${Math.floor(diff / 60)}분 전`;
+        if (diff < 86400)    return `${Math.floor(diff / 3600)}시간 전`;
+        if (diff < 604800)   return `${Math.floor(diff / 86400)}일 전`;
+        return d.toLocaleDateString('ko-KR');
+    }
+
+    로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 스마트 대시보드</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; --dark-bg: #0f172a; }
+        .text-knight-blue { color: var(--knight-blue); }
+        .bg-knight-blue { background-color: var(--knight-blue); }
+        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" style="display: none;" id="main-body">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">Main <span class="text-knight-blue">Dashboard</span></h2>
+            <div class="flex items-center space-x-3">
+                <span id="user-email-display" class="text-xs font-bold text-gray-500 hidden md:block"></span>
+                <button onclick="로그아웃하기()" class="p-2 bg-red-50 text-red-600 rounded-xl shadow-sm border border-red-100 text-[10px] font-black hover:bg-red-100 transition">로그아웃</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100">
+                        <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-4">Pending Approvals</h3>
+                        <p class="text-5xl font-black text-gray-900 mb-2" id="pending-count">0</p>
+                        <p class="text-xs font-bold text-[#B8D200] uppercase tracking-tighter">Action Required</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100">
+                        <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-4">Today's Focus</h3>
+                        <div class="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#152484]">
+                            <p class="text-[10px] font-bold text-gray-400">Security Check</p>
+                            <p class="text-sm font-black">철통 보안 모드 가동 중</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6">Live Activity Feed (통합 알림)</h3>
+                    <div id="feed-container" class="space-y-4 w-full"></div>
+                </div>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-knight-blue p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-4">Notice</h3>
+                    <p class="text-sm font-bold leading-relaxed" id="notice-msg">로딩중...</p>
+                </div>
+
+                <!-- 소비기한 임박 알림 위젯 -->
+                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-orange-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-black text-orange-500 uppercase tracking-widest">⏳ 소비기한 임박</h3>
+                        <a href="inventory.html" class="text-[10px] font-black text-knight-blue hover:underline">전체보기 →</a>
+                    </div>
+                    <div id="expiry-widget" class="space-y-2">
+                        <p class="text-xs text-gray-400 text-center py-3">로딩 중...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <div id="detail-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="bg-knight-blue p-6 text-white flex justify-between items-center">
+                <h3 class="text-sm font-black tracking-widest uppercase text-[#B8D200]">결제 서류 상세</h3>
+                <button onclick="closeModal()" class="text-white hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">항목 / 업체명</p>
+                    <p class="text-xl font-black text-gray-900" id="modal-title">로딩중...</p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">상세 내용</p>
+                    <p class="text-sm font-medium text-gray-600" id="modal-desc">-</p>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">기안자</p>
+                        <p class="text-sm font-bold text-gray-900" id="modal-requester">로딩중...</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">현재 상태</p>
+                        <span class="inline-block px-3 py-1 bg-knight-blue/10 text-knight-blue text-xs font-black rounded-full" id="modal-status">대기중</span>
+                    </div>
+                </div>
+                <div class="pt-6 border-t border-gray-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">결제 금액</p>
+                    <p class="text-3xl font-black text-knight-blue" id="modal-price">₩0</p>
+                </div>
+                <div class="pt-6 flex space-x-3">
+                    <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 transition">닫기</button>
+                    <button id="btn-approve" onclick="결재승인하기()" class="flex-1 bg-knight-blue text-white font-bold py-3 rounded-xl hover:bg-opacity-90 transition shadow-lg hidden">승인하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 통합_목록 = [];
+        let 현재선택된ID = null;
+        let 현재테이블 = '';
+        let 현재로그인유저 = '';
+
+        async function 로그인_확인하기() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+
+            현재로그인유저 = session.user.email;
+            document.getElementById('user-email-display').innerText = `접속자: ${현재로그인유저}`;
+            
+            const noticeMsg = document.getElementById('notice-msg');
+            if (현재로그인유저 === 최고관리자계정) {
+                noticeMsg.innerText = "대표님, 환영합니다. 모든 결재 승인 권한이 활성화되었습니다.";
+                noticeMsg.classList.add('text-[#B8D200]');
+            } else {
+                noticeMsg.innerText = "일반 직원 모드입니다. 기안 문서를 열람할 수 있습니다.";
+            }
+
+            document.getElementById('main-body').style.display = 'flex';
+            통합_데이터_가져오기();
+            통합_대기건수_가져오기();
+            소비기한위젯_불러오기();
+        }
+
+        async function 로그아웃하기() {
+            localStorage.removeItem('autoLogin');
+            await supabaseClient.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        async function 통합_대기건수_가져오기() {
+            const res1 = await supabaseClient.from('purchase_orders').select('*', { count: 'exact', head: true }).eq('status', '기안중');
+            const res2 = await supabaseClient.from('expense_reports').select('*', { count: 'exact', head: true }).eq('status', '기안중');
+            document.getElementById('pending-count').innerText = (res1.count || 0) + (res2.count || 0);
+        }
+
+        // 💡 복구된 아름다운 라이브 피드 렌더링 엔진
+        async function 통합_데이터_가져오기() {
+            const purchase = await supabaseClient.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(10);
+            const expense = await supabaseClient.from('expense_reports').select('*').order('created_at', { ascending: false }).limit(10);
+            const pData = (purchase.data || []).map(d => ({ ...d, type: '발주', tableName: 'purchase_orders' }));
+            const eData = (expense.data || []).map(d => ({ ...d, type: '지출', tableName: 'expense_reports' }));
+            통합_목록 = [...pData, ...eData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+
+            const container = document.getElementById('feed-container');
+            container.innerHTML = '';
+            통합_목록.forEach((item, index) => {
+                const 시간 = new Date(item.created_at).toLocaleTimeString('ko-KR');
+                const 금액 = Number(item.total_price || item.amount).toLocaleString(); 
+                const 명칭 = item.type === '발주' ? item.vendor_name : item.category;
+                const 상태색상 = item.status === '승인완료' ? 'text-knight-green' : 'text-knight-blue';
+                const 아이콘색 = item.type === '발주' ? 'bg-knight-blue/10 text-knight-blue' : 'bg-orange-100 text-orange-600';
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div onclick="openModal(${index})" class="cursor-pointer flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-2xl transition-all border border-gray-100 bg-white mb-3">
+                        <div class="w-10 h-10 rounded-full ${아이콘색} flex items-center justify-center font-bold text-xs">${item.type}</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between"><p class="text-sm font-bold text-gray-900">${명칭} 결제 요청</p><span class="text-[10px] font-medium text-gray-400">${시간}</span></div>
+                            <p class="text-xs text-gray-500 mt-1">${item.requester}님이 ₩${금액}원을 상신했습니다. <span class="ml-2 font-black ${상태색상}">[${item.status}]</span></p>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // 💡 복구된 모달 창 열기 기능
+        function openModal(index) {
+            const data = 통합_목록[index];
+            현재선택된ID = data.id; 현재테이블 = data.tableName;
+            document.getElementById('modal-title').innerText = data.type === '발주' ? data.vendor_name : data.category;
+            document.getElementById('modal-desc').innerText = data.description || "식자재 발주 내역입니다.";
+            document.getElementById('modal-requester').innerText = data.requester;
+            document.getElementById('modal-status').innerText = data.status;
+            document.getElementById('modal-price').innerText = "₩" + Number(data.total_price || data.amount).toLocaleString();
+
+            const btn = document.getElementById('btn-approve');
+            if (data.status === '기안중' && 현재로그인유저 === 최고관리자계정) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modal-content').classList.remove('scale-95'); }, 10);
+        }
+
+        // 결재 승인 — 발주 승인 시 매입 장부에 자동 반영
+        async function 결재승인하기() {
+            if (!현재선택된ID) return;
+
+            const { error } = await supabaseClient
+                .from(현재테이블)
+                .update({ status: '승인완료' })
+                .eq('id', 현재선택된ID);
+
+            if (error) { alert("승인 실패: " + error.message); return; }
+
+            // 발주서 승인이면 매입 장부(inbound_ledger)에 자동 등록
+            if (현재테이블 === 'purchase_orders') {
+                const { data: po } = await supabaseClient
+                    .from('purchase_orders')
+                    .select('*')
+                    .eq('id', 현재선택된ID)
+                    .single();
+
+                if (po) {
+                    await supabaseClient.from('inbound_ledger').insert([{
+                        vendor: po.vendor_name,
+                        item_name: po.description,
+                        quantity: po.items_json ? po.items_json.length : 1,
+                        total_price: po.total_price,
+                        items_json: po.items_json || [],
+                        processor: 현재로그인유저,
+                        source: '결재승인_자동반영'
+                    }]);
+                }
+            }
+
+            alert("승인 완료! 발주서는 매입 장부에 자동 반영되었습니다. 🚀");
+            closeModal();
+            통합_데이터_가져오기();
+            통합_대기건수_가져오기();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detail-modal'); modal.classList.add('opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // 소비기한 임박 위젯
+        async function 소비기한위젯_불러오기() {
+            const { data } = await supabaseClient
+                .from('inbound_ledger')
+                .select('items_json, vendor');
+
+            if (!data) return;
+
+            const today = new Date(); today.setHours(0,0,0,0);
+            const 임박목록 = [];
+
+            data.forEach(record => {
+                let items = record.items_json;
+                if (!items) return;
+                if (!Array.isArray(items)) { try { items = JSON.parse(items); } catch { return; } }
+                items.forEach(item => {
+                    if (!item.expiry_date) return;
+                    const exp = new Date(item.expiry_date); exp.setHours(0,0,0,0);
+                    const dday = Math.floor((exp - today) / 86400000);
+                    if (dday <= 14) 임박목록.push({ name: item.name, dday, expiry: item.expiry_date, qty: item.qty });
+                });
+            });
+
+            const container = document.getElementById('expiry-widget');
+            if (임박목록.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">임박 품목 없음 ✅</p>';
+                return;
+            }
+
+            임박목록.sort((a, b) => a.dday - b.dday);
+            container.innerHTML = 임박목록.slice(0, 5).map(item => {
+                const dd = item.dday;
+                const badge = dd <= 0  ? `<span class="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">만료</span>`
+                            : dd <= 3  ? `<span class="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">D-${dd}</span>`
+                            : dd <= 7  ? `<span class="text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">D-${dd}</span>`
+                            :            `<span class="text-[10px] font-black text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">D-${dd}</span>`;
+                return `
+                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div>
+                        <p class="text-xs font-bold text-gray-900">${item.name}</p>
+                        <p class="text-[10px] text-gray-400">${item.expiry} · ${item.qty}개</p>
+                    </div>
+                    ${badge}
+                </div>`;
+            }).join('');
+        }
+
+        로그인_확인하기();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

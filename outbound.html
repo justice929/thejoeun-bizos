@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 스마트 매출 장부</title>
+    <style>
+        /* 💡 다른 장부들과 100% 동일한 안정적인 CSS 적용 */
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .bg-knight-blue { background-color: var(--knight-blue) !important; }
+        .text-knight-blue { color: var(--knight-blue) !important; }
+        .border-knight-blue { border-color: var(--knight-blue) !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .floating-save { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" id="main-body" style="display: none;">
+
+    <div id="sidebar-container"></div>
+
+    <div class="fixed bottom-10 right-10 z-[100]">
+        <button onclick="매출기록저장()" class="bg-knight-blue text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform floating-save border-4 border-[#B8D200]">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+        <p class="text-[10px] font-black text-knight-blue mt-2 text-center bg-white/80 rounded-full py-1 shadow-sm">매출 확정</p>
+    </div>
+
+    <main class="flex-1 md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8 border-b-2 border-knight-blue pb-6">
+            <div>
+                <p class="text-xs font-bold text-knight-blue tracking-[0.2em] uppercase">Sales Logistics Engine</p>
+                <h2 class="text-3xl font-black text-gray-900 tracking-tighter">스마트 <span class="text-knight-blue">매출 장부</span></h2>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="db-status" class="px-4 py-2 bg-[#B8D200]/20 rounded-full text-xs font-black text-knight-blue">데이터 동기화 완료</div>
+                <a href="online.html" class="flex items-center gap-2 px-4 py-2 bg-knight-blue text-white rounded-xl font-black text-xs hover:opacity-90 transition shadow-md">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    온라인 주문 가져오기
+                </a>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6 italic">Sales Header</h2>
+
+                    <div class="mb-6">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-3 uppercase">매출 형태 선택</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="매출형태선택('직납')" id="type-직납"
+                                class="type-btn py-4 rounded-2xl font-black text-sm border-2 border-knight-blue bg-knight-blue text-white shadow-md transition-all">
+                                🚚 직납
+                            </button>
+                            <button onclick="매출형태선택('택배대행')" id="type-택배대행"
+                                class="type-btn py-4 rounded-2xl font-black text-sm border-2 border-gray-200 bg-white text-gray-400 transition-all hover:border-orange-400 hover:text-orange-500">
+                                📦 택배대행
+                            </button>
+                            <a href="online.html"
+                                class="py-4 rounded-2xl font-black text-sm border-2 border-[#B8D200] bg-[#B8D200]/10 text-knight-blue transition-all hover:bg-[#B8D200] flex items-center justify-center gap-1">
+                                🌐 온라인판매
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="relative">
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">고객사 (초성 검색)</label>
+                            <input type="text" id="out-vendor" placeholder="예: ㄹㅎ -> 락희차이나" class="w-full border-2 border-[#B8D200] rounded-2xl p-4 text-lg font-black focus:border-knight-blue outline-none" onfocus="고객사검색()" oninput="고객사검색()">
+                            <ul id="vendor-dropdown" class="hidden absolute z-50 w-full mt-2 bg-white border-2 border-knight-blue rounded-2xl shadow-xl max-h-48 overflow-y-auto divide-y divide-gray-100"></ul>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-2 uppercase">출고 날짜</label>
+                            <input type="date" id="out-date" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm font-bold bg-gray-50 focus:border-knight-blue outline-none">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <h2 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6 italic">Sales Cart</h2>
+                    <div class="flex flex-col md:flex-row gap-4 items-end bg-[#152484]/5 p-5 rounded-3xl border border-[#152484]/20 mb-6 relative">
+                        <div class="flex-1 relative">
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1">상품 초성 검색</label>
+                            <input type="text" id="item-search" placeholder="상품명 초성 검색" class="w-full border-2 border-gray-200 rounded-xl p-3 text-sm font-bold bg-white focus:border-knight-blue outline-none" onfocus="상품검색()" oninput="상품검색()">
+                            <ul id="item-dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-knight-blue rounded-xl shadow-xl max-h-40 overflow-y-auto divide-y divide-gray-100"></ul>
+                        </div>
+                        <div class="w-20">
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1">수량</label>
+                            <input type="number" id="item-qty" placeholder="0" class="w-full border-2 border-gray-200 rounded-xl p-3 text-sm font-black text-center bg-white outline-none focus:border-knight-blue">
+                        </div>
+                        <div class="w-32">
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1">매출단가(₩)</label>
+                            <input type="number" id="item-price" placeholder="0" class="w-full border-2 border-gray-200 rounded-xl p-3 text-sm font-black text-right bg-white outline-none">
+                        </div>
+                        <button onclick="장바구니담기()" class="bg-[#B8D200] text-knight-blue px-6 py-3.5 rounded-xl font-black text-sm hover:scale-105 transition-transform">➕ 추가</button>
+                    </div>
+
+                    <div class="border border-gray-100 rounded-2xl overflow-hidden mb-6">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b">
+                                <tr><th class="p-3 pl-4">품목명</th><th class="p-3 text-center">수량</th><th class="p-3 text-right">단가</th><th class="p-3 text-right">합계</th><th class="p-3 text-center w-12">삭제</th></tr>
+                            </thead>
+                            <tbody id="cart-list" class="divide-y divide-gray-100 text-sm">
+                                <tr><td colspan="5" class="p-8 text-center text-gray-400 font-bold">매출 품목을 장바구니에 담으세요.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-gray-900 p-6 rounded-3xl flex justify-between items-center shadow-inner mb-6">
+                        <span class="text-gray-400 font-bold tracking-widest uppercase text-xs">Total Amount</span>
+                        <span class="text-3xl font-black text-white" id="cart-total">₩0</span>
+                    </div>
+
+                    <button onclick="매출기록저장()" class="w-full bg-knight-blue text-white py-5 rounded-3xl font-black text-lg hover:opacity-90 shadow-xl transition-all">매출 장부 최종 확정</button>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <div class="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-6 italic">Live Sales Feed</h3>
+                    <div id="sales-list" class="space-y-3"><p class="text-sm text-gray-400 text-center py-10">로딩 중...</p></div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        let 현재로그인유저 = '';
+        let 거래처DB = [];
+        let 상품DB = [];
+        let 장바구니 = [];
+        let 현재매출형태 = '직납';
+
+        function 매출형태선택(type) {
+            현재매출형태 = type;
+            const 스타일 = {
+                '직납':    { active: 'border-knight-blue bg-knight-blue text-white shadow-md',    inactive: 'border-gray-200 bg-white text-gray-400' },
+                '택배대행': { active: 'border-orange-400 bg-orange-400 text-white shadow-md',      inactive: 'border-gray-200 bg-white text-gray-400' },
+                '온라인판매':{ active: 'border-[#B8D200] bg-[#B8D200] text-knight-blue shadow-md', inactive: 'border-gray-200 bg-white text-gray-400' },
+            };
+            ['직납', '택배대행', '온라인판매'].forEach(t => {
+                const btn = document.getElementById(`type-${t}`);
+                btn.className = `type-btn py-4 rounded-2xl font-black text-sm border-2 transition-all ${t === type ? 스타일[t].active : 스타일[t].inactive}`;
+            });
+        }
+
+        async function 로그인_확인() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            현재로그인유저 = session.user.email;
+            document.getElementById('main-body').style.display = 'flex';
+            document.getElementById('out-date').valueAsDate = new Date();
+            await 마스터데이터_동기화();
+            최근매출목록_불러오기();
+        }
+
+        async function 마스터데이터_동기화() {
+            const { data: vData } = await supabaseClient.from('partner_master').select('company_name').eq('partner_type', '매출처');
+            if (vData) 거래처DB = vData.map(v => v.company_name);
+            // 💡 [패치] is_taxable(과세여부) 데이터도 함께 긁어옵니다.
+            const { data: pData } = await supabaseClient.from('product_master').select('*');
+            if (pData) 상품DB = pData;
+        }
+
+        function 고객사검색() {
+            const kw = document.getElementById('out-vendor').value.toLowerCase().replace(/\s/g, '');
+            const cho = 초성추출(kw);
+            const list = 거래처DB.filter(c => c.toLowerCase().replace(/\s/g, '').includes(kw) || 초성추출(c).includes(cho));
+            let html = '';
+            list.forEach(c => html += `<li onclick="고객사선택('${c}')" class="p-3 hover:bg-knight-green/10 cursor-pointer text-sm font-bold">${c}</li>`);
+            document.getElementById('vendor-dropdown').innerHTML = html || '<li class="p-3 text-xs text-gray-400">결과 없음</li>';
+            document.getElementById('vendor-dropdown').classList.remove('hidden');
+        }
+
+        function 고객사선택(n) { document.getElementById('out-vendor').value = n; document.getElementById('vendor-dropdown').classList.add('hidden'); }
+
+        function 상품검색() {
+            const kw = document.getElementById('item-search').value.toLowerCase().replace(/\s/g, '');
+            const cho = 초성추출(kw);
+            const list = 상품DB.filter(p => p.item_name.toLowerCase().replace(/\s/g, '').includes(kw) || 초성추출(p.item_name).includes(cho));
+            let html = '';
+            list.forEach(p => {
+                const taxBadge = p.is_taxable ? '<span class="text-knight-blue">과세</span>' : '<span class="text-orange-500">면세</span>';
+                // 💡 [패치] 선택 시 과세여부(is_taxable)를 함수로 전달합니다.
+                html += `<li onclick="상품선택('${p.item_name}', ${p.base_price * 1.17}, ${p.is_taxable})" class="p-3 hover:bg-knight-green/10 cursor-pointer text-sm font-bold flex justify-between"><span>${p.item_name} <span class="text-[10px] ml-1">${taxBadge}</span></span><span class="text-[10px] text-gray-400">기준가: ₩${Math.round(p.base_price * 1.17).toLocaleString()}</span></li>`;
+            });
+            document.getElementById('item-dropdown').innerHTML = html || '<li class="p-3 text-xs text-gray-400">결과 없음</li>';
+            document.getElementById('item-dropdown').classList.remove('hidden');
+        }
+
+        // 💡 선택된 품목의 과세여부를 임시 저장할 변수
+        let 현재선택품목_과세여부 = true;
+
+        function 상품선택(n, p, isTaxable) { 
+            document.getElementById('item-search').value = n; 
+            document.getElementById('item-price').value = Math.round(p); 
+            document.getElementById('item-dropdown').classList.add('hidden'); 
+            현재선택품목_과세여부 = isTaxable;
+        }
+
+        document.addEventListener('click', e => {
+            const vInput = document.getElementById('out-vendor');
+            const vDrop = document.getElementById('vendor-dropdown');
+            if (vInput && vDrop && !vInput.contains(e.target) && !vDrop.contains(e.target)) vDrop.classList.add('hidden');
+            
+            const iInput = document.getElementById('item-search');
+            const iDrop = document.getElementById('item-dropdown');
+            if (iInput && iDrop && !iInput.contains(e.target) && !iDrop.contains(e.target)) iDrop.classList.add('hidden');
+        });
+
+        // 💡 [핵심 패치] 장바구니 담을 때 공급가/세액 자동 계산 엔진
+        function 장바구니담기() {
+            const name = document.getElementById('item-search').value;
+            const qty = Number(document.getElementById('item-qty').value);
+            const price = Number(document.getElementById('item-price').value);
+            if(!name || qty <= 0) return;
+
+            const total = qty * price;
+            let supply = total;
+            let tax = 0;
+
+            if (현재선택품목_과세여부) {
+                supply = Math.round(total / 1.1); // 공급가액: 합계 / 1.1
+                tax = total - supply;             // 세액: 합계 - 공급가액
+            }
+
+            장바구니.push({ name, qty, price, total, supply, tax, is_taxable: 현재선택품목_과세여부 });
+            
+            document.getElementById('item-search').value = ''; document.getElementById('item-qty').value = ''; document.getElementById('item-price').value = '';
+            장바구니그리기();
+        }
+
+        function 장바구니그리기() {
+            const area = document.getElementById('cart-list');
+            let sumTotal = 0, sumSupply = 0, sumTax = 0, html = '';
+            장바구니.forEach((item, idx) => {
+                sumTotal += item.total; sumSupply += item.supply; sumTax += item.tax;
+                const taxLabel = item.is_taxable ? '과세' : '면세';
+                html += `<tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-3 pl-4 font-bold text-gray-900">${item.name} <span class="text-[9px] text-gray-400 bg-gray-100 px-1 rounded">${taxLabel}</span></td>
+                            <td class="p-3 text-center text-knight-blue font-black">${item.qty}</td>
+                            <td class="p-3 text-right text-gray-400 text-xs">₩${item.price.toLocaleString()}</td>
+                            <td class="p-3 text-right font-black text-gray-900">₩${item.total.toLocaleString()} <br><span class="text-[10px] text-gray-400 font-normal">(공: ${item.supply.toLocaleString()} / 세: ${item.tax.toLocaleString()})</span></td>
+                            <td class="p-3 text-center"><button onclick="장바구니삭제(${idx})" class="text-red-400 hover:text-red-600 font-black p-1">X</button></td>
+                        </tr>`;
+            });
+            area.innerHTML = html || '<tr><td colspan="5" class="p-8 text-center text-gray-400 font-bold">품목을 추가하세요.</td></tr>';
+            document.getElementById('cart-total').innerHTML = `₩${sumTotal.toLocaleString()} <span class="text-sm text-gray-400 font-normal block mt-1">공급가: ₩${sumSupply.toLocaleString()} / 세액: ₩${sumTax.toLocaleString()}</span>`;
+        }
+
+        function 장바구니삭제(idx) { 장바구니.splice(idx, 1); 장바구니그리기(); }
+
+        async function 매출기록저장() {
+            const vendor = document.getElementById('out-vendor').value;
+            const salesDate = document.getElementById('out-date').value;
+            if(!vendor || 장바구니.length === 0) { alert("고객사와 품목을 확인하세요."); return; }
+
+            const totalSum  = 장바구니.reduce((s, i) => s + i.total, 0);
+            const supplySum = 장바구니.reduce((s, i) => s + i.supply, 0);
+            const taxSum    = 장바구니.reduce((s, i) => s + i.tax, 0);
+
+            const { error } = await supabaseClient.from('outbound_ledger').insert([{
+                client_name: vendor, sales_date: salesDate, quantity: 장바구니.length,
+                total_sales: totalSum, supply_price: supplySum, tax_amount: taxSum,
+                item_name: 장바구니[0].name + (장바구니.length > 1 ? ` 외 ${장바구니.length-1}건` : ""),
+                items_json: 장바구니, processor: 현재로그인유저,
+                sales_type: 현재매출형태
+            }]);
+
+            if (error) alert("저장 실패: " + error.message);
+            else { alert("매출 등록 완료!"); 장바구니 = []; 장바구니그리기(); 최근매출목록_불러오기(); }
+        }
+
+        async function 최근매출목록_불러오기() {
+            const { data } = await supabaseClient.from('outbound_ledger').select('*').order('created_at', { ascending: false }).limit(6);
+            let html = '';
+            data.forEach(d => {
+                const canDel = 현재로그인유저 === d.processor || 현재로그인유저 === MASTER_ID;
+                const printBtnHtml = `<button onclick="window.open('invoice.html?id=${d.id}', '_blank')" class="text-[10px] text-knight-blue bg-blue-50 hover:bg-blue-100 transition font-bold px-2 py-1 rounded mr-2 shadow-sm border border-blue-200">명세표</button>`;
+                const deleteBtnHtml = canDel ? `<button onclick="기록삭제(${d.id})" class="text-[10px] text-red-500 bg-red-50 hover:bg-red-100 transition font-bold px-2 py-1 rounded border border-red-200">삭제</button>` : '';
+
+                const typeColor = d.sales_type === '직납' ? 'bg-knight-blue/10 text-knight-blue'
+                               : d.sales_type === '택배대행' ? 'bg-orange-100 text-orange-600'
+                               : 'bg-[#B8D200]/20 text-knight-blue';
+                html += `
+                <div class="p-4 border border-gray-100 bg-gray-50 rounded-2xl flex justify-between items-center mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-black px-2 py-0.5 rounded ${typeColor}">${d.sales_type || '직납'}</span>
+                            <p class="text-sm font-bold text-gray-900 truncate">${d.item_name}</p>
+                        </div>
+                        <p class="text-[10px] text-gray-400">${d.client_name} | ${d.sales_date || '-'}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="text-right mr-4">
+                            <span class="font-black text-gray-900 block">₩${d.total_sales.toLocaleString()}</span>
+                            <span class="text-[9px] text-gray-400">세액: ₩${(d.tax_amount||0).toLocaleString()}</span>
+                        </div>
+                        ${printBtnHtml}
+                        ${deleteBtnHtml}
+                    </div>
+                </div>`;
+            });
+            document.getElementById('sales-list').innerHTML = html;
+        }
+
+        async function 기록삭제(id) { if(confirm("삭제하시겠습니까?")) { await supabaseClient.from('outbound_ledger').delete().eq('id', id); 최근매출목록_불러오기(); } }
+        
+        로그인_확인();
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

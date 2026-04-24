@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>정의의 기사 - 보안 로그인</title>
+    <style>
+        :root { --knight-blue: #152484; --knight-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; }
+        .bg-knight-blue { background-color: var(--knight-blue); } 
+    </style>
+</head>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden p-10 text-center">
+        <div class="mb-8">
+            <p class="text-[10px] font-bold text-knight-blue tracking-widest uppercase">Knight of Justice</p>
+            <h1 class="text-3xl font-black text-gray-900 italic">더조은식품 <span class="text-knight-blue">ERP</span></h1>
+        </div>
+        
+        <div class="space-y-5">
+            <input type="email" id="login-email" placeholder="아이디(이메일)" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm focus:border-knight-blue outline-none bg-gray-50 font-semibold transition-colors">
+            <input type="password" id="login-pw" placeholder="비밀번호" class="w-full border-2 border-gray-100 rounded-2xl p-4 text-sm focus:border-knight-blue outline-none bg-gray-50 font-semibold transition-colors">
+            
+            <div class="flex items-center justify-between px-1">
+                <label class="flex items-center space-x-2 cursor-pointer group">
+                    <input type="checkbox" id="save-id" class="w-4 h-4 rounded border-gray-300 text-knight-blue focus:ring-knight-blue accent-[#152484]">
+                    <span class="text-xs font-bold text-gray-500 group-hover:text-knight-blue transition-colors">아이디 저장</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer group">
+                    <input type="checkbox" id="auto-login" class="w-4 h-4 rounded border-gray-300 text-knight-blue focus:ring-knight-blue accent-[#152484]">
+                    <span class="text-xs font-bold text-gray-500 group-hover:text-knight-blue transition-colors">자동 로그인</span>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="handleLogin()" class="w-full bg-knight-blue text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 shadow-xl transition-all">시스템 접속</button>
+                <button onclick="handleSignUp()" class="w-full bg-white text-knight-blue border-2 border-knight-blue py-3 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">신규 회원가입</button>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-8 font-bold italic">PRODUCED BY JUSTICE PARK</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+        window.onload = async function() {
+            const savedEmail = localStorage.getItem('savedEmail');
+            if (savedEmail) {
+                document.getElementById('login-email').value = savedEmail;
+                document.getElementById('save-id').checked = true;
+            }
+
+            const isAutoLogin = localStorage.getItem('autoLogin');
+            if (isAutoLogin === 'true') {
+                document.getElementById('auto-login').checked = true;
+                
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        };
+
+        // 💡 핵심 수술 2: 사용자가 마우스로 체크를 끄면 즉시 수첩에서 기록을 삭제합니다!
+        document.getElementById('auto-login').addEventListener('change', function(e) {
+            if (!e.target.checked) {
+                localStorage.removeItem('autoLogin');
+            }
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-pw').value;
+            
+            if (!email || !password) { alert("이메일과 비밀번호를 입력해 주세요."); return; }
+
+            const saveIdChecked = document.getElementById('save-id').checked;
+            const autoLoginChecked = document.getElementById('auto-login').checked;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                alert("접속 실패: " + error.message);
+            } else {
+                if (saveIdChecked) localStorage.setItem('savedEmail', email);
+                else localStorage.removeItem('savedEmail');
+
+                if (autoLoginChecked) localStorage.setItem('autoLogin', 'true');
+                else localStorage.removeItem('autoLogin');
+
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        async function handleSignUp() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-pw').value;
+
+            if (!email || !password) {
+                alert("가입하실 이메일과 비밀번호를 입력해 주세요.");
+                return;
+            }
+
+            if (password.length < 6) {
+                alert("비밀번호는 최소 6자리 이상이어야 합니다.");
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                alert("회원가입 실패: " + error.message);
+            } else {
+                alert("회원가입 신청이 완료되었습니다!\n이메일 인증이 필요할 수 있으니 메일함을 확인해 주세요.");
+            }
+        }
+    </script>
+</body>
+</html>

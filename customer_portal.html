@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>더조은식품 — 발주</title>
+    <style>
+        :root { --joeun-blue: #152484; --joeun-green: #B8D200; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .product-card { transition: transform 0.15s, box-shadow 0.15s; }
+        .product-card:active { transform: scale(0.97); }
+        .qty-btn { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; cursor: pointer; transition: all 0.15s; }
+        .cart-sheet { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        @keyframes badgePop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+        .badge-pop { animation: badgePop 0.3s ease; }
+        /* 하단 탭바 */
+        .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; gap:3px; font-size:10px; font-weight:700; cursor:pointer; transition:color 0.15s; }
+        .tab-btn.active { color: var(--joeun-blue); }
+        .tab-btn:not(.active) { color: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-24" id="main-body" style="display:none;">
+
+    <!-- 헤더 -->
+    <header class="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div>
+                <p class="text-[10px] font-black text-[#152484] tracking-widest uppercase">더조은식품</p>
+                <h1 class="text-base font-black text-gray-900 leading-tight" id="company-name">발주하기</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- 장바구니 버튼 (헤더) -->
+                <button onclick="장바구니시트열기()" class="relative p-2">
+                    <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span id="cart-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">0</span>
+                </button>
+                <button onclick="로그아웃()" class="text-[10px] font-black text-gray-400 hover:text-red-500 transition">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="max-w-2xl mx-auto">
+
+        <!-- ① 주문하기 탭 -->
+        <div id="tab-order" class="px-4 pt-4">
+            <!-- 검색바 -->
+            <div class="relative mb-4">
+                <input type="text" id="search-input" placeholder="상품명 또는 초성 검색 (예: ㅇㅍ → 양파)"
+                    class="w-full border-2 border-gray-100 rounded-2xl p-4 pl-11 text-sm font-bold bg-white focus:border-[#152484] outline-none shadow-sm"
+                    oninput="상품검색및렌더링()">
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <!-- 카테고리 탭 -->
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide" id="cat-tabs">
+                <button onclick="카테고리선택('전체')" id="cat-전체"
+                    class="cat-tab px-4 py-2 bg-[#152484] text-white rounded-full font-black text-xs whitespace-nowrap shadow-md">전체</button>
+                <button onclick="카테고리선택('공산')" id="cat-공산"
+                    class="cat-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-[#152484] transition">공산</button>
+                <button onclick="카테고리선택('농산')" id="cat-농산"
+                    class="cat-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-[#152484] transition">농산</button>
+                <button onclick="카테고리선택('수산')" id="cat-수산"
+                    class="cat-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-[#152484] transition">수산</button>
+                <button onclick="카테고리선택('축산')" id="cat-축산"
+                    class="cat-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-[#152484] transition">축산</button>
+                <button onclick="카테고리선택('기타')" id="cat-기타"
+                    class="cat-tab px-4 py-2 bg-white text-gray-500 border rounded-full font-bold text-xs whitespace-nowrap hover:border-[#152484] transition">기타</button>
+            </div>
+
+            <!-- 상품 그리드 -->
+            <div class="grid grid-cols-2 gap-3" id="product-grid">
+                <div class="col-span-2 py-16 text-center text-gray-400 text-sm">상품을 불러오는 중...</div>
+            </div>
+        </div>
+
+        <!-- ② 주문현황 탭 -->
+        <div id="tab-history" class="px-4 pt-4 hidden">
+            <h2 class="text-sm font-black text-gray-900 mb-4">내 주문 현황</h2>
+            <div id="order-history-list" class="space-y-4">
+                <p class="text-sm text-gray-400 text-center py-12">주문 내역을 불러오는 중...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 하단 탭바 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex shadow-lg">
+        <button class="tab-btn active" id="nav-order" onclick="네비탭전환('order')">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            발주하기
+        </button>
+        <button class="tab-btn" id="nav-history" onclick="네비탭전환('history')">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            주문현황
+        </button>
+    </nav>
+
+    <!-- 장바구니 시트 (슬라이드업) -->
+    <div id="cart-overlay" class="fixed inset-0 bg-black/40 z-50 hidden" onclick="장바구니시트닫기()"></div>
+    <div id="cart-sheet" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] z-50 shadow-2xl max-h-[85vh] flex flex-col translate-y-full cart-sheet">
+        <div class="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
+            <h2 class="text-base font-black text-gray-900">장바구니</h2>
+            <button onclick="장바구니시트닫기()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- 장바구니 아이템 목록 -->
+        <div class="flex-1 overflow-y-auto p-4" id="cart-items-list"></div>
+
+        <!-- 발주 설정 + 제출 -->
+        <div class="p-6 border-t border-gray-100 flex-shrink-0 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">납품 희망일 *</label>
+                    <input type="date" id="delivery-date" class="w-full border-2 border-[#152484]/30 rounded-xl p-3 text-sm font-bold bg-white focus:border-[#152484] outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">요청사항</label>
+                    <input type="text" id="order-notes" placeholder="특이사항 입력" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm font-bold bg-gray-50 focus:border-[#152484] outline-none">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase">주문 합계</p>
+                    <p class="text-2xl font-black text-[#152484]" id="cart-total-display">₩0</p>
+                </div>
+                <button onclick="발주제출()" class="bg-[#152484] text-white px-8 py-4 rounded-2xl font-black text-sm shadow-lg hover:opacity-90 active:scale-95 transition-all">
+                    발주 접수하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js"></script>
+    <script>
+    const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="%23f1f5f9"/><text x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle" font-size="48" fill="%2394a3b8">📦</text></svg>';
+
+    let 내계정 = null;
+    let 전체상품DB = [];
+    let 현재카테고리 = '전체';
+    let 장바구니 = {};  // { product_code: { ...product, qty } }
+
+    async function 로그인_확인() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'customer_login.html'; return; }
+
+        const { data: account } = await supabaseClient
+            .from('customer_accounts').select('*').eq('auth_email', session.user.email).maybeSingle();
+        if (!account || !account.is_active) { await supabaseClient.auth.signOut(); window.location.href = 'customer_login.html'; return; }
+
+        내계정 = account;
+        document.getElementById('company-name').innerText = account.company_name;
+        document.getElementById('main-body').style.display = 'block';
+
+        // 오늘 날짜 기본값
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('delivery-date').valueAsDate = tomorrow;
+
+        await 상품목록_불러오기();
+    }
+
+    // ── 상품 ──────────────────────────────────────────────────
+    async function 상품목록_불러오기() {
+        const { data } = await supabaseClient
+            .from('product_master')
+            .select('product_code, item_name, category, base_price, specification, unit, image_url, is_taxable')
+            .order('category').order('item_name');
+        전체상품DB = data || [];
+        상품검색및렌더링();
+    }
+
+    function 상품검색및렌더링() {
+        const kw = document.getElementById('search-input').value;
+        let list = 현재카테고리 === '전체' ? 전체상품DB : 전체상품DB.filter(p => p.category === 현재카테고리);
+        if (kw) list = 초성검색(list, kw, 'item_name');
+        상품그리드_렌더링(list);
+    }
+
+    function 상품그리드_렌더링(list) {
+        const grid = document.getElementById('product-grid');
+        if (list.length === 0) {
+            grid.innerHTML = '<div class="col-span-2 py-16 text-center text-gray-400 text-sm">해당 상품이 없습니다.</div>';
+            return;
+        }
+
+        grid.innerHTML = list.map(p => {
+            const inCart = 장바구니[p.product_code];
+            const qty = inCart ? inCart.qty : 0;
+            const imgSrc = p.image_url || PLACEHOLDER_IMG;
+            const taxBadge = !p.is_taxable ? '<span class="text-[9px] font-black text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full">면세</span>' : '';
+
+            return `
+            <div class="product-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="aspect-square bg-gray-50 relative overflow-hidden">
+                    <img src="${imgSrc}" alt="${p.item_name}"
+                        class="w-full h-full object-cover"
+                        onerror="this.src='${PLACEHOLDER_IMG}'">
+                </div>
+                <div class="p-3">
+                    <p class="text-xs font-black text-gray-900 leading-snug mb-1 line-clamp-2">${p.item_name}</p>
+                    <p class="text-[10px] text-gray-400 mb-2">${p.specification || ''} ${taxBadge}</p>
+                    <p class="text-sm font-black text-[#152484] mb-3">₩${Math.round(p.base_price * (p.is_taxable ? 1.1 : 1)).toLocaleString()}</p>
+                    <div class="flex items-center justify-between">
+                        ${qty === 0
+                            ? `<button onclick="수량변경('${p.product_code}', 1)" class="w-full py-2 bg-[#152484] text-white rounded-xl font-black text-xs hover:opacity-90 active:scale-95 transition-all">+ 담기</button>`
+                            : `<div class="flex items-center gap-2 w-full justify-between">
+                                <button onclick="수량변경('${p.product_code}', ${qty - 1})" class="qty-btn bg-gray-100 text-gray-600 hover:bg-gray-200">−</button>
+                                <span class="font-black text-[#152484] text-sm">${qty}</span>
+                                <button onclick="수량변경('${p.product_code}', ${qty + 1})" class="qty-btn bg-[#152484] text-white hover:opacity-90">+</button>
+                               </div>`
+                        }
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function 카테고리선택(cat) {
+        현재카테고리 = cat;
+        document.querySelectorAll('.cat-tab').forEach(btn => {
+            const c = btn.id.replace('cat-', '');
+            btn.className = `cat-tab px-4 py-2 rounded-full font-black text-xs whitespace-nowrap transition ${
+                c === cat ? 'bg-[#152484] text-white shadow-md' : 'bg-white text-gray-500 border hover:border-[#152484]'
+            }`;
+        });
+        상품검색및렌더링();
+    }
+
+    // ── 장바구니 ──────────────────────────────────────────────
+    function 수량변경(productCode, newQty) {
+        const product = 전체상품DB.find(p => p.product_code === productCode);
+        if (!product) return;
+
+        if (newQty <= 0) {
+            delete 장바구니[productCode];
+        } else {
+            const unitPrice = Math.round(product.base_price * (product.is_taxable ? 1.1 : 1));
+            장바구니[productCode] = { ...product, qty: newQty, unit_price: unitPrice };
+        }
+        장바구니배지_업데이트();
+        상품그리드_렌더링(
+            현재카테고리 === '전체' ? 전체상품DB : 전체상품DB.filter(p => p.category === 현재카테고리)
+        );
+    }
+
+    function 장바구니배지_업데이트() {
+        const count = Object.values(장바구니).reduce((s, i) => s + i.qty, 0);
+        const badge = document.getElementById('cart-badge');
+        if (count > 0) {
+            badge.innerText = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+            badge.classList.add('badge-pop');
+            setTimeout(() => badge.classList.remove('badge-pop'), 300);
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    function 장바구니시트열기() {
+        const items = Object.values(장바구니);
+        if (items.length === 0) { alert('장바구니가 비어있습니다.'); return; }
+        장바구니시트_렌더링();
+        document.getElementById('cart-overlay').classList.remove('hidden');
+        document.getElementById('cart-sheet').classList.remove('translate-y-full');
+    }
+
+    function 장바구니시트닫기() {
+        document.getElementById('cart-sheet').classList.add('translate-y-full');
+        document.getElementById('cart-overlay').classList.add('hidden');
+    }
+
+    function 장바구니시트_렌더링() {
+        const items = Object.values(장바구니);
+        const total = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
+
+        document.getElementById('cart-total-display').innerText = '₩' + total.toLocaleString();
+        document.getElementById('cart-items-list').innerHTML = items.length === 0
+            ? '<p class="text-sm text-gray-400 text-center py-8">장바구니가 비어있습니다.</p>'
+            : items.map(item => `
+                <div class="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0">
+                    <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                        <img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.item_name}" class="w-full h-full object-cover" onerror="this.src='${PLACEHOLDER_IMG}'">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-black text-gray-900 truncate">${item.item_name}</p>
+                        <p class="text-xs text-gray-400">₩${item.unit_price.toLocaleString()} × ${item.qty} = <span class="font-black text-[#152484]">₩${(item.unit_price * item.qty).toLocaleString()}</span></p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button onclick="시트수량변경('${item.product_code}', ${item.qty - 1})" class="qty-btn bg-gray-100 text-gray-600">−</button>
+                        <span class="font-black text-sm w-6 text-center">${item.qty}</span>
+                        <button onclick="시트수량변경('${item.product_code}', ${item.qty + 1})" class="qty-btn bg-[#152484] text-white">+</button>
+                    </div>
+                </div>`).join('');
+    }
+
+    function 시트수량변경(code, qty) {
+        수량변경(code, qty);
+        장바구니시트_렌더링();
+    }
+
+    // ── 발주 제출 ─────────────────────────────────────────────
+    async function 발주제출() {
+        const items = Object.values(장바구니);
+        if (items.length === 0) { alert('상품을 담아주세요.'); return; }
+
+        const deliveryDate = document.getElementById('delivery-date').value;
+        const notes = document.getElementById('order-notes').value.trim();
+        if (!deliveryDate) { alert('납품 희망일을 선택해 주세요.'); return; }
+
+        const totalAmount = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
+        const itemsJson = items.map(i => ({
+            product_code: i.product_code,
+            name: i.item_name,
+            category: i.category,
+            qty: i.qty,
+            unit_price: i.unit_price,
+            total: i.unit_price * i.qty,
+            is_taxable: i.is_taxable
+        }));
+
+        const { error } = await supabaseClient.from('customer_orders').insert([{
+            customer_id: 내계정.id,
+            company_name: 내계정.company_name,
+            status: '접수',
+            delivery_date: deliveryDate,
+            total_amount: totalAmount,
+            notes: notes || null,
+            items_json: itemsJson
+        }]);
+
+        if (error) { alert('발주 접수 실패: ' + error.message); return; }
+
+        alert(`✅ 발주가 접수되었습니다!\n납품 희망일: ${deliveryDate}\n\n더조은식품 담당자가 확인 후 연락드립니다.`);
+        장바구니 = {};
+        장바구니배지_업데이트();
+        장바구니시트닫기();
+        상품검색및렌더링();
+        네비탭전환('history');
+    }
+
+    // ── 주문현황 ──────────────────────────────────────────────
+    async function 주문현황_불러오기() {
+        const { data } = await supabaseClient
+            .from('customer_orders')
+            .select('*')
+            .eq('customer_id', 내계정.id)
+            .order('created_at', { ascending: false });
+
+        const container = document.getElementById('order-history-list');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-12">주문 내역이 없습니다.</p>';
+            return;
+        }
+
+        const STATUS_STYLE = {
+            '접수':    'bg-gray-100 text-gray-600',
+            '확인중':  'bg-yellow-100 text-yellow-700',
+            '확정':    'bg-blue-100 text-blue-700',
+            '출고중':  'bg-purple-100 text-purple-700',
+            '배송완료':'bg-green-100 text-green-700',
+            '취소':    'bg-red-100 text-red-500',
+        };
+
+        container.innerHTML = data.map(order => {
+            const style = STATUS_STYLE[order.status] || 'bg-gray-100 text-gray-600';
+            const items = order.items_json || [];
+            const preview = items.slice(0, 2).map(i => i.name).join(', ') + (items.length > 2 ? ` 외 ${items.length - 2}건` : '');
+            const dateStr = new Date(order.created_at).toLocaleDateString('ko-KR');
+
+            return `
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-gray-50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black px-3 py-1 rounded-full ${style}">${order.status}</span>
+                        <span class="text-[10px] text-gray-400 font-bold">${dateStr}</span>
+                    </div>
+                    <p class="text-sm font-black text-gray-900">${preview || '상품 정보 없음'}</p>
+                    <p class="text-xs text-gray-400 mt-1">납품 희망일: ${order.delivery_date || '-'}</p>
+                </div>
+                <div class="px-4 py-3 flex items-center justify-between bg-gray-50">
+                    <span class="text-xs font-bold text-gray-500">${items.length}개 품목</span>
+                    <span class="text-sm font-black text-[#152484]">₩${(order.total_amount || 0).toLocaleString()}</span>
+                </div>
+                ${order.notes ? `<div class="px-4 py-2 bg-yellow-50 border-t border-yellow-100"><p class="text-[10px] text-yellow-700 font-bold">💬 ${order.notes}</p></div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    // ── 네비 탭 전환 ──────────────────────────────────────────
+    function 네비탭전환(tab) {
+        document.getElementById('tab-order').classList.toggle('hidden', tab !== 'order');
+        document.getElementById('tab-history').classList.toggle('hidden', tab !== 'history');
+        ['order','history'].forEach(t => {
+            document.getElementById(`nav-${t}`).classList.toggle('active', t === tab);
+        });
+        if (tab === 'history') 주문현황_불러오기();
+    }
+
+    async function 로그아웃() {
+        await supabaseClient.auth.signOut();
+        window.location.href = 'customer_login.html';
+    }
+
+    로그인_확인();
+    </script>
+</body>
+</html>

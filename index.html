@@ -12,12 +12,6 @@
         .bg-knight-blue { background-color: var(--knight-blue); }
         .text-knight-blue { color: var(--knight-blue); }
         
-        .scan-line {
-            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background-color: #B8D200; box-shadow: 0 0 10px #B8D200;
-            animation: scan 1.5s infinite linear; display: none;
-        }
-        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
         /* 스크롤바 커스텀 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -47,13 +41,12 @@
                     </div>
 
                     <div class="mb-8">
-                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest">1. 영수증 업로드 (AI 자동 인식)</label>
+                        <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest">1. 영수증 업로드 (첨부용)</label>
                         <div class="relative w-full h-32 border-2 border-dashed border-knight-blue/30 rounded-2xl bg-knight-blue/5 overflow-hidden group hover:border-knight-blue transition-colors cursor-pointer" onclick="document.getElementById('e-receipt').click()">
                             <input type="file" id="e-receipt" class="hidden" accept="image/*" onchange="영수증인식시뮬레이션(this)">
-                            <div id="scan-line" class="scan-line"></div>
-                            <div id="upload-content" class="absolute inset-0 flex flex-col items-center justify-center text-knight-blue">
+<div id="upload-content" class="absolute inset-0 flex flex-col items-center justify-center text-knight-blue">
                                 <svg class="w-8 h-8 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <p class="text-xs font-black" id="file-name-display">영수증 사진 업로드 (AI 분석)</p>
+                                <p class="text-xs font-black" id="file-name-display">영수증 사진 업로드 (클릭 또는 터치)</p>
                             </div>
                         </div>
                     </div>
@@ -205,17 +198,8 @@
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 현재업로드파일명 = file.name;
-                const scanLine = document.getElementById('scan-line');
                 const content = document.getElementById('upload-content');
-                scanLine.style.display = 'block';
-                content.innerHTML = `<p class="text-sm font-black text-[#B8D200] animate-pulse">AI 분석 중...</p>`;
-                
-                setTimeout(() => {
-                    scanLine.style.display = 'none';
-                    content.innerHTML = `<p class="text-xs font-black text-knight-blue">✅ ${file.name}</p>`;
-                    document.getElementById('e-amount').value = 15000;
-                    document.getElementById('e-vendor').value = "스타벅스 (자동인식)";
-                }, 1500);
+                content.innerHTML = `<p class="text-xs font-black text-knight-blue">✅ ${file.name}</p><p class="text-[10px] text-gray-400 mt-1">첨부 완료 — 금액과 사용처를 직접 입력해 주세요</p>`;
             }
         }
 

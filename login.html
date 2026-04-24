@@ -36,8 +36,8 @@
 
             <div class="grid grid-cols-1 gap-3">
                 <button onclick="handleLogin()" class="w-full bg-knight-blue text-white py-4 rounded-2xl font-black text-lg hover:opacity-90 shadow-xl transition-all">시스템 접속</button>
-                <button onclick="handleSignUp()" class="w-full bg-white text-knight-blue border-2 border-knight-blue py-3 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">신규 회원가입</button>
             </div>
+            <p class="text-xs text-gray-400 mt-4 font-bold text-center">계정 발급은 관리자에게 문의하세요</p>
         </div>
         <p class="text-xs text-gray-400 mt-8 font-bold italic">PRODUCED BY JUSTICE PARK</p>
     </div>
@@ -97,31 +97,6 @@
             }
         }
 
-        async function handleSignUp() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-pw').value;
-
-            if (!email || !password) {
-                alert("가입하실 이메일과 비밀번호를 입력해 주세요.");
-                return;
-            }
-
-            if (password.length < 6) {
-                alert("비밀번호는 최소 6자리 이상이어야 합니다.");
-                return;
-            }
-
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                alert("회원가입 실패: " + error.message);
-            } else {
-                alert("회원가입 신청이 완료되었습니다!\n이메일 인증이 필요할 수 있으니 메일함을 확인해 주세요.");
-            }
-        }
     </script>
 </body>
 </html>

@@ -62,9 +62,10 @@ CREATE TABLE IF NOT EXISTS customer_orders (
 ALTER TABLE customer_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_orders   ENABLE ROW LEVEL SECURITY;
 
--- 고객 계정: 직원은 전체 조회/관리, 고객은 본인만
-CREATE POLICY "ca_staff_all"    ON customer_accounts FOR ALL USING (auth.role()='authenticated');
-CREATE POLICY "co_staff_all"    ON customer_orders FOR ALL USING (auth.role()='authenticated');
+-- 고객 계정: 조회는 전체 직원, 수정/삭제는 관리자만
+CREATE POLICY "ca_select_all_auth" ON customer_accounts FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "ca_write_admin"     ON customer_accounts FOR ALL   USING (auth.email() = 'justice@thejoeun.com');
+CREATE POLICY "co_staff_all"       ON customer_orders   FOR ALL   USING (auth.role() = 'authenticated');
 
 -- ⑧ 사내 게시판 테이블
 CREATE TABLE IF NOT EXISTS board_posts (
@@ -113,8 +114,8 @@ CREATE POLICY "board_comments_select" ON board_comments FOR SELECT USING (auth.r
 CREATE POLICY "board_comments_insert" ON board_comments FOR INSERT WITH CHECK (auth.email()=author);
 CREATE POLICY "board_comments_delete" ON board_comments FOR DELETE USING (auth.email()=author OR auth.email()='jungeu0913@naver.com');
 
-CREATE POLICY "employees_select_all"  ON employees FOR SELECT USING (auth.role()='authenticated');
-CREATE POLICY "employees_write_all"   ON employees FOR ALL    USING (auth.role()='authenticated');
+CREATE POLICY "employees_select_all"  ON employees FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "employees_write_admin" ON employees FOR ALL    USING (auth.email() = 'justice@thejoeun.com');
 
 -- ============================================================
 -- RLS 활성화
@@ -192,10 +193,10 @@ CREATE POLICY "master_write_admin" ON product_master
 
 CREATE POLICY "partner_select_all" ON partner_master
     FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "partner_write_all_auth" ON partner_master
-    FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "partner_write_admin" ON partner_master
+    FOR ALL USING (auth.email() = 'justice@thejoeun.com');
 
 CREATE POLICY "account_select_all" ON account_master
     FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "account_write_all_auth" ON account_master
-    FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "account_write_admin" ON account_master
+    FOR ALL USING (auth.email() = 'justice@thejoeun.com');

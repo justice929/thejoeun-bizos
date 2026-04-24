@@ -70,14 +70,22 @@ function 사이드바_그리기() {
 
     const 전체HTML = `
     <aside class="hidden md:flex w-64 bg-[#152484] text-white flex-col fixed h-full shadow-2xl z-40 overflow-y-auto" style="--knight-blue:#152484;">
-        <div class="p-6">
+        <div class="p-6 flex flex-col h-full">
             <div class="mb-8 italic">
                 <p class="text-[10px] font-bold text-[#B8D200] tracking-widest uppercase">The Joeun Food Biz-OS</p>
                 <h1 class="text-3xl font-black tracking-tighter mt-1">정의의 기사</h1>
             </div>
-            <nav class="space-y-1 pb-10">
+            <nav class="space-y-1 flex-1 pb-6">
                 ${메뉴HTML}
             </nav>
+            <div class="pt-4 border-t border-white/10">
+                <button onclick="사이드바_로그아웃()" class="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-red-500/20 transition text-red-300 hover:text-red-200 font-bold text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    로그아웃
+                </button>
+            </div>
         </div>
     </aside>
 
@@ -88,6 +96,13 @@ function 사이드바_그리기() {
 
     const container = document.getElementById('sidebar-container');
     if (container) container.innerHTML = 전체HTML;
+}
+
+async function 사이드바_로그아웃() {
+    if (!confirm("로그아웃 하시겠습니까?")) return;
+    localStorage.removeItem('autoLogin');
+    await supabaseClient.auth.signOut();
+    window.location.href = 'login.html';
 }
 
 document.addEventListener('DOMContentLoaded', 사이드바_그리기);

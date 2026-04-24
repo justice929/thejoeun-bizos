@@ -4,293 +4,601 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <title>정의의 기사 - 스마트 대시보드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css"/>
+    <title>Dashboard — 더조은식품 ERP</title>
     <style>
-        :root { --knight-blue: #152484; --knight-green: #B8D200; --dark-bg: #0f172a; }
-        .text-knight-blue { color: var(--knight-blue); }
-        .bg-knight-blue { background-color: var(--knight-blue); }
-        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        body { font-family: 'Inter', -apple-system, sans-serif; }
+
+        /* ── Gridstack ── */
+        .grid-stack-item-content {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .grid-stack-item.ui-draggable-dragging .grid-stack-item-content {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+            transform: scale(1.015) rotate(0.8deg);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .ui-resizable-se { bottom: 6px !important; right: 6px !important; }
+
+        /* ── Edit mode ── */
+        .widget-toolbar { display: none; }
+        .edit-active .widget-toolbar { display: flex; }
+        .edit-active .grid-stack-item-content {
+            border-color: rgba(21,36,132,0.18);
+            cursor: grab;
+        }
+        .edit-active .grid-stack-item-content:active { cursor: grabbing; }
+
+        /* ── Catalog slide panel ── */
+        #catalog-panel {
+            transform: translateX(110%);
+            transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #catalog-panel.open { transform: translateX(0); }
+
+        /* ── Live dot ── */
+        @keyframes livePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+            50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+        }
+        .live-dot { animation: livePulse 2.5s infinite; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        /* ── Tabular numbers ── */
+        .num { font-variant-numeric: tabular-nums; }
     </style>
 </head>
-<body class="bg-gray-50 flex min-h-screen pb-20 md:pb-0" style="display: none;" id="main-body">
+<body class="bg-[#f1f5f9] flex min-h-screen pb-20 md:pb-0" style="display:none;" id="main-body">
 
     <div id="sidebar-container"></div>
 
-    <main class="flex-1 md:ml-64 p-4 md:p-8">
-        <header class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black text-gray-900 italic uppercase tracking-tighter">Main <span class="text-knight-blue">Dashboard</span></h2>
-            <div class="flex items-center space-x-3">
-                <span id="user-email-display" class="text-xs font-bold text-gray-500 hidden md:block"></span>
-                <button onclick="로그아웃하기()" class="p-2 bg-red-50 text-red-600 rounded-xl shadow-sm border border-red-100 text-[10px] font-black hover:bg-red-100 transition">로그아웃</button>
+    <main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-30 bg-white/75 backdrop-blur-xl border-b border-black/[0.05] px-5 h-14 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 live-dot flex-shrink-0"></div>
+                <div class="min-w-0">
+                    <h1 class="text-sm font-black text-gray-900 leading-none">Dashboard</h1>
+                    <p class="text-[11px] text-gray-400 font-medium mt-0.5 truncate" id="user-email-display"></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- Reset (edit mode only) -->
+                <button id="reset-btn" onclick="레이아웃_초기화()" title="기본 레이아웃으로 초기화"
+                    class="hidden h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+                <!-- Add widget (edit mode only) -->
+                <button id="add-btn" onclick="카탈로그열기()"
+                    class="hidden items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-black bg-[#152484] text-white hover:opacity-90 transition shadow-md shadow-[#152484]/20">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+                    위젯
+                </button>
+                <!-- Edit toggle -->
+                <button id="edit-btn" onclick="편집모드전환()"
+                    class="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold border border-gray-200 text-gray-500 hover:border-[#152484] hover:text-[#152484] transition-all">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span id="edit-label">편집</span>
+                </button>
+                <!-- Logout -->
+                <button onclick="로그아웃하기()" title="로그아웃"
+                    class="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100">
-                        <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-4">Pending Approvals</h3>
-                        <p class="text-5xl font-black text-gray-900 mb-2" id="pending-count">0</p>
-                        <p class="text-xs font-bold text-[#B8D200] uppercase tracking-tighter">Action Required</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100">
-                        <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-4">Today's Focus</h3>
-                        <div class="bg-gray-50 p-4 rounded-2xl border-l-4 border-[#152484]">
-                            <p class="text-[10px] font-bold text-gray-400">Security Check</p>
-                            <p class="text-sm font-black">철통 보안 모드 가동 중</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-                    <h3 class="text-xs font-black text-knight-blue uppercase tracking-widest mb-6">Live Activity Feed (통합 알림)</h3>
-                    <div id="feed-container" class="space-y-4 w-full"></div>
-                </div>
-            </div>
-
-            <aside class="space-y-6">
-                <div class="bg-knight-blue p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-                    <h3 class="text-xs font-black text-[#B8D200] uppercase tracking-widest mb-4">Notice</h3>
-                    <p class="text-sm font-bold leading-relaxed" id="notice-msg">로딩중...</p>
-                </div>
-
-                <!-- 소비기한 임박 알림 위젯 -->
-                <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-orange-100">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-black text-orange-500 uppercase tracking-widest">⏳ 소비기한 임박</h3>
-                        <a href="inventory.html" class="text-[10px] font-black text-knight-blue hover:underline">전체보기 →</a>
-                    </div>
-                    <div id="expiry-widget" class="space-y-2">
-                        <p class="text-xs text-gray-400 text-center py-3">로딩 중...</p>
-                    </div>
-                </div>
-            </aside>
+        <!-- Grid Canvas -->
+        <div class="flex-1 p-4 md:p-5">
+            <div class="grid-stack" id="gs"></div>
         </div>
+
     </main>
 
-    <div id="detail-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
-            <div class="bg-knight-blue p-6 text-white flex justify-between items-center">
-                <h3 class="text-sm font-black tracking-widest uppercase text-[#B8D200]">결제 서류 상세</h3>
-                <button onclick="closeModal()" class="text-white hover:text-gray-300">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <!-- Catalog Overlay -->
+    <div id="catalog-overlay" onclick="카탈로그닫기()" class="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 hidden"></div>
+
+    <!-- Catalog Panel -->
+    <aside id="catalog-panel" class="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col">
+        <div class="h-14 px-5 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
+            <div>
+                <p class="text-sm font-black text-gray-900">위젯 추가</p>
+                <p class="text-[10px] text-gray-400 mt-0.5">클릭하면 즉시 추가됩니다</p>
+            </div>
+            <button onclick="카탈로그닫기()" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div id="catalog-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+    </aside>
+
+    <!-- Approval Modal -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+            <div class="bg-[#152484] px-6 py-5 flex items-center justify-between">
+                <p class="text-[10px] font-black text-[#B8D200] uppercase tracking-widest">결재 서류 상세</p>
+                <button onclick="closeModal()" class="text-white/60 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="p-8 space-y-6">
+            <div class="p-6 space-y-4">
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">항목 / 업체명</p>
-                    <p class="text-xl font-black text-gray-900" id="modal-title">로딩중...</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">항목 / 업체명</p>
+                    <p class="text-xl font-black text-gray-900" id="modal-title">—</p>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">상세 내용</p>
-                    <p class="text-sm font-medium text-gray-600" id="modal-desc">-</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">상세 내용</p>
+                    <p class="text-sm text-gray-600 leading-relaxed" id="modal-desc">—</p>
                 </div>
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">기안자</p>
-                        <p class="text-sm font-bold text-gray-900" id="modal-requester">로딩중...</p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">기안자</p>
+                        <p class="text-sm font-bold text-gray-900" id="modal-requester">—</p>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">현재 상태</p>
-                        <span class="inline-block px-3 py-1 bg-knight-blue/10 text-knight-blue text-xs font-black rounded-full" id="modal-status">대기중</span>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">상태</p>
+                        <span class="inline-block px-2 py-1 bg-[#152484]/10 text-[#152484] text-[10px] font-black rounded-lg" id="modal-status">—</span>
                     </div>
                 </div>
-                <div class="pt-6 border-t border-gray-100">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">결제 금액</p>
-                    <p class="text-3xl font-black text-knight-blue" id="modal-price">₩0</p>
+                <div class="pt-4 border-t border-gray-100">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">결제 금액</p>
+                    <p class="text-4xl font-black text-[#152484] num" id="modal-price">₩0</p>
                 </div>
-                <div class="pt-6 flex space-x-3">
-                    <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 transition">닫기</button>
-                    <button id="btn-approve" onclick="결재승인하기()" class="flex-1 bg-knight-blue text-white font-bold py-3 rounded-xl hover:bg-opacity-90 transition shadow-lg hidden">승인하기</button>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeModal()" class="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition text-sm">닫기</button>
+                    <button id="btn-approve" onclick="결재승인하기()" class="hidden flex-1 py-3.5 bg-[#152484] text-white font-black rounded-2xl hover:opacity-90 transition shadow-lg shadow-[#152484]/20 text-sm">승인하기 ✓</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.all.js"></script>
     <script src="utils.js"></script>
     <script>
-        let 통합_목록 = [];
-        let 현재선택된ID = null;
-        let 현재테이블 = '';
-        let 현재로그인유저 = '';
+    'use strict';
 
-        async function 로그인_확인하기() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { window.location.href = 'login.html'; return; }
+    // ════════════════════════════════════════════════════
+    // STATE
+    // ════════════════════════════════════════════════════
+    let grid;
+    let 현재로그인유저 = '';
+    let 편집모드 = false;
+    let 통합_목록 = [];
+    let 현재선택된ID = null;
+    let 현재테이블 = '';
 
-            현재로그인유저 = session.user.email;
-            document.getElementById('user-email-display').innerText = `접속자: ${현재로그인유저}`;
-            
-            const noticeMsg = document.getElementById('notice-msg');
-            if (현재로그인유저 === 최고관리자계정) {
-                noticeMsg.innerText = "대표님, 환영합니다. 모든 결재 승인 권한이 활성화되었습니다.";
-                noticeMsg.classList.add('text-[#B8D200]');
-            } else {
-                noticeMsg.innerText = "일반 직원 모드입니다. 기안 문서를 열람할 수 있습니다.";
-            }
+    const LAYOUT_KEY = () => `joeun_dash_v1_${현재로그인유저}`;
 
-            document.getElementById('main-body').style.display = 'flex';
-            통합_데이터_가져오기();
-            통합_대기건수_가져오기();
-            소비기한위젯_불러오기();
+    // ════════════════════════════════════════════════════
+    // WIDGET REGISTRY
+    // 새 위젯 추가 시 여기에만 등록하면 됩니다
+    // ════════════════════════════════════════════════════
+    const WIDGET_REGISTRY = {
+        'w-pending': {
+            label: 'Pending Approvals',
+            desc: '승인 대기 중인 결재 건수',
+            icon: '⏳',
+            defaultW: 3, defaultH: 3,
+            render: renderPending,
+        },
+        'w-notice': {
+            label: '공지사항',
+            desc: '관리자 공지 및 안내 메시지',
+            icon: '📢',
+            defaultW: 3, defaultH: 3,
+            render: renderNotice,
+        },
+        'w-quicklinks': {
+            label: 'Quick Links',
+            desc: '자주 쓰는 메뉴 바로가기',
+            icon: '🔗',
+            defaultW: 6, defaultH: 3,
+            render: renderQuickLinks,
+        },
+        'w-activity': {
+            label: 'Live Activity Feed',
+            desc: '최근 결재 문서 실시간 피드',
+            icon: '⚡',
+            defaultW: 7, defaultH: 7,
+            render: renderActivity,
+        },
+        'w-expiry': {
+            label: '소비기한 임박',
+            desc: '14일 이내 임박 품목 알림',
+            icon: '🚨',
+            defaultW: 5, defaultH: 7,
+            render: renderExpiry,
+        },
+    };
+
+    const DEFAULT_LAYOUT = [
+        { id: 'w-pending',    x: 0, y: 0, w: 3, h: 3 },
+        { id: 'w-notice',     x: 3, y: 0, w: 3, h: 3 },
+        { id: 'w-quicklinks', x: 6, y: 0, w: 6, h: 3 },
+        { id: 'w-activity',   x: 0, y: 3, w: 7, h: 7 },
+        { id: 'w-expiry',     x: 7, y: 3, w: 5, h: 7 },
+    ];
+
+    // ════════════════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════════════════
+    async function 로그인_확인하기() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+        현재로그인유저 = session.user.email;
+        document.getElementById('user-email-display').innerText = 현재로그인유저;
+        document.getElementById('main-body').style.display = 'flex';
+        대시보드_초기화();
+    }
+
+    function 대시보드_초기화() {
+        grid = GridStack.init({
+            column: 12,
+            cellHeight: 72,
+            margin: 6,
+            animate: true,
+            float: false,
+            disableDrag: true,
+            disableResize: true,
+            resizable: { handles: 'se' },
+        }, '#gs');
+
+        grid.on('change', () => { if (편집모드) 레이아웃_저장(); });
+
+        const saved = localStorage.getItem(LAYOUT_KEY());
+        레이아웃_적용(saved ? JSON.parse(saved) : DEFAULT_LAYOUT);
+    }
+
+    function 레이아웃_적용(layout) {
+        grid.removeAll(false);
+        layout.forEach(item => {
+            if (WIDGET_REGISTRY[item.id]) 위젯_추가(item.id, item.x, item.y, item.w, item.h);
+        });
+    }
+
+    function 위젯_추가(widgetId, x, y, w, h) {
+        const def = WIDGET_REGISTRY[widgetId];
+        if (!def) return;
+
+        const html = `
+        <div class="h-full flex flex-col" data-widget-id="${widgetId}">
+            <div class="flex items-center justify-between px-5 pt-4 pb-1 flex-shrink-0">
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">${def.label}</span>
+                <div class="widget-toolbar items-center gap-1">
+                    <button onclick="위젯_삭제(this)"
+                        class="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-100 transition">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="widget-body flex-1 overflow-auto px-5 pb-4 min-h-0">
+                <div class="flex items-center justify-center h-full">
+                    <div class="w-5 h-5 border-2 border-gray-200 border-t-[#152484] rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>`;
+
+        const el = grid.addWidget({ x, y, w: w || def.defaultW, h: h || def.defaultH, content: html, id: widgetId });
+        const bodyEl = el.querySelector('.widget-body');
+        if (bodyEl) def.render(bodyEl);
+    }
+
+    // ════════════════════════════════════════════════════
+    // EDIT MODE
+    // ════════════════════════════════════════════════════
+    function 편집모드전환() {
+        편집모드 = !편집모드;
+        const gsEl    = document.getElementById('gs');
+        const label   = document.getElementById('edit-label');
+        const editBtn = document.getElementById('edit-btn');
+        const addBtn  = document.getElementById('add-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        if (편집모드) {
+            gsEl.classList.add('edit-active');
+            grid.enableMove(true);
+            grid.enableResize(true);
+            label.innerText = '완료';
+            editBtn.classList.add('border-[#152484]', 'text-[#152484]', 'bg-blue-50');
+            [addBtn, resetBtn].forEach(b => { b.classList.remove('hidden'); b.classList.add('flex'); });
+        } else {
+            gsEl.classList.remove('edit-active');
+            grid.enableMove(false);
+            grid.enableResize(false);
+            label.innerText = '편집';
+            editBtn.classList.remove('border-[#152484]', 'text-[#152484]', 'bg-blue-50');
+            [addBtn, resetBtn].forEach(b => { b.classList.remove('flex'); b.classList.add('hidden'); });
+            카탈로그닫기();
+            레이아웃_저장();
         }
+    }
 
-        async function 로그아웃하기() {
-            localStorage.removeItem('autoLogin');
-            await supabaseClient.auth.signOut();
-            window.location.href = 'login.html';
-        }
+    function 위젯_삭제(btn) {
+        const item = btn.closest('.grid-stack-item');
+        if (item) { grid.removeWidget(item); 레이아웃_저장(); }
+    }
 
-        async function 통합_대기건수_가져오기() {
-            const res1 = await supabaseClient.from('purchase_orders').select('*', { count: 'exact', head: true }).eq('status', '기안중');
-            const res2 = await supabaseClient.from('expense_reports').select('*', { count: 'exact', head: true }).eq('status', '기안중');
-            document.getElementById('pending-count').innerText = (res1.count || 0) + (res2.count || 0);
-        }
+    // ════════════════════════════════════════════════════
+    // PERSISTENCE
+    // ════════════════════════════════════════════════════
+    function 레이아웃_저장() {
+        const items = grid.save(false);
+        const layout = items
+            .filter(i => i.id && WIDGET_REGISTRY[i.id])
+            .map(i => ({ id: i.id, x: i.x, y: i.y, w: i.w, h: i.h }));
+        localStorage.setItem(LAYOUT_KEY(), JSON.stringify(layout));
+    }
 
-        // 💡 복구된 아름다운 라이브 피드 렌더링 엔진
-        async function 통합_데이터_가져오기() {
-            const purchase = await supabaseClient.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(10);
-            const expense = await supabaseClient.from('expense_reports').select('*').order('created_at', { ascending: false }).limit(10);
-            const pData = (purchase.data || []).map(d => ({ ...d, type: '발주', tableName: 'purchase_orders' }));
-            const eData = (expense.data || []).map(d => ({ ...d, type: '지출', tableName: 'expense_reports' }));
-            통합_목록 = [...pData, ...eData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+    function 레이아웃_초기화() {
+        if (!confirm('기본 레이아웃으로 초기화하시겠습니까?')) return;
+        localStorage.removeItem(LAYOUT_KEY());
+        레이아웃_적용(DEFAULT_LAYOUT);
+        레이아웃_저장();
+    }
 
-            const container = document.getElementById('feed-container');
-            container.innerHTML = '';
-            통합_목록.forEach((item, index) => {
-                const 시간 = new Date(item.created_at).toLocaleTimeString('ko-KR');
-                const 금액 = Number(item.total_price || item.amount).toLocaleString(); 
-                const 명칭 = item.type === '발주' ? item.vendor_name : item.category;
-                const 상태색상 = item.status === '승인완료' ? 'text-knight-green' : 'text-knight-blue';
-                const 아이콘색 = item.type === '발주' ? 'bg-knight-blue/10 text-knight-blue' : 'bg-orange-100 text-orange-600';
-
-                container.insertAdjacentHTML('beforeend', `
-                    <div onclick="openModal(${index})" class="cursor-pointer flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-2xl transition-all border border-gray-100 bg-white mb-3">
-                        <div class="w-10 h-10 rounded-full ${아이콘색} flex items-center justify-center font-bold text-xs">${item.type}</div>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between"><p class="text-sm font-bold text-gray-900">${명칭} 결제 요청</p><span class="text-[10px] font-medium text-gray-400">${시간}</span></div>
-                            <p class="text-xs text-gray-500 mt-1">${item.requester}님이 ₩${금액}원을 상신했습니다. <span class="ml-2 font-black ${상태색상}">[${item.status}]</span></p>
-                        </div>
-                    </div>
-                `);
-            });
-        }
-
-        // 💡 복구된 모달 창 열기 기능
-        function openModal(index) {
-            const data = 통합_목록[index];
-            현재선택된ID = data.id; 현재테이블 = data.tableName;
-            document.getElementById('modal-title').innerText = data.type === '발주' ? data.vendor_name : data.category;
-            document.getElementById('modal-desc').innerText = data.description || "식자재 발주 내역입니다.";
-            document.getElementById('modal-requester').innerText = data.requester;
-            document.getElementById('modal-status').innerText = data.status;
-            document.getElementById('modal-price').innerText = "₩" + Number(data.total_price || data.amount).toLocaleString();
-
-            const btn = document.getElementById('btn-approve');
-            if (data.status === '기안중' && 현재로그인유저 === 최고관리자계정) {
-                btn.style.display = 'block';
-            } else {
-                btn.style.display = 'none';
-            }
-
-            const modal = document.getElementById('detail-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); document.getElementById('modal-content').classList.remove('scale-95'); }, 10);
-        }
-
-        // 결재 승인 — 발주 승인 시 매입 장부에 자동 반영
-        async function 결재승인하기() {
-            if (!현재선택된ID) return;
-
-            const { error } = await supabaseClient
-                .from(현재테이블)
-                .update({ status: '승인완료' })
-                .eq('id', 현재선택된ID);
-
-            if (error) { alert("승인 실패: " + error.message); return; }
-
-            // 발주서 승인이면 매입 장부(inbound_ledger)에 자동 등록
-            if (현재테이블 === 'purchase_orders') {
-                const { data: po } = await supabaseClient
-                    .from('purchase_orders')
-                    .select('*')
-                    .eq('id', 현재선택된ID)
-                    .single();
-
-                if (po) {
-                    await supabaseClient.from('inbound_ledger').insert([{
-                        vendor: po.vendor_name,
-                        item_name: po.description,
-                        quantity: po.items_json ? po.items_json.length : 1,
-                        total_price: po.total_price,
-                        items_json: po.items_json || [],
-                        processor: 현재로그인유저,
-                        source: '결재승인_자동반영'
-                    }]);
-                }
-            }
-
-            alert("승인 완료! 발주서는 매입 장부에 자동 반영되었습니다. 🚀");
-            closeModal();
-            통합_데이터_가져오기();
-            통합_대기건수_가져오기();
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('detail-modal'); modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        // 소비기한 임박 위젯
-        async function 소비기한위젯_불러오기() {
-            const { data } = await supabaseClient
-                .from('inbound_ledger')
-                .select('items_json, vendor');
-
-            if (!data) return;
-
-            const today = new Date(); today.setHours(0,0,0,0);
-            const 임박목록 = [];
-
-            data.forEach(record => {
-                let items = record.items_json;
-                if (!items) return;
-                if (!Array.isArray(items)) { try { items = JSON.parse(items); } catch { return; } }
-                items.forEach(item => {
-                    if (!item.expiry_date) return;
-                    const exp = new Date(item.expiry_date); exp.setHours(0,0,0,0);
-                    const dday = Math.floor((exp - today) / 86400000);
-                    if (dday <= 14) 임박목록.push({ name: item.name, dday, expiry: item.expiry_date, qty: item.qty });
-                });
-            });
-
-            const container = document.getElementById('expiry-widget');
-            if (임박목록.length === 0) {
-                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">임박 품목 없음 ✅</p>';
-                return;
-            }
-
-            임박목록.sort((a, b) => a.dday - b.dday);
-            container.innerHTML = 임박목록.slice(0, 5).map(item => {
-                const dd = item.dday;
-                const badge = dd <= 0  ? `<span class="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">만료</span>`
-                            : dd <= 3  ? `<span class="text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">D-${dd}</span>`
-                            : dd <= 7  ? `<span class="text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">D-${dd}</span>`
-                            :            `<span class="text-[10px] font-black text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">D-${dd}</span>`;
+    // ════════════════════════════════════════════════════
+    // CATALOG
+    // ════════════════════════════════════════════════════
+    function 카탈로그열기() {
+        const 현재위젯 = new Set(grid.save(false).map(i => i.id));
+        document.getElementById('catalog-list').innerHTML = Object.entries(WIDGET_REGISTRY)
+            .map(([id, def]) => {
+                const added = 현재위젯.has(id);
                 return `
-                <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <div>
-                        <p class="text-xs font-bold text-gray-900">${item.name}</p>
-                        <p class="text-[10px] text-gray-400">${item.expiry} · ${item.qty}개</p>
+                <button onclick="${added ? '' : `카탈로그에서추가('${id}')`}" ${added ? 'disabled' : ''}
+                    class="w-full text-left p-4 rounded-2xl border-2 transition-all
+                    ${added ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed' : 'border-gray-100 hover:border-[#152484]/30 hover:bg-blue-50/50 cursor-pointer'}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">${def.icon}</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-black text-gray-900">${def.label}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5 leading-tight">${def.desc}</p>
+                        </div>
+                        ${added
+                            ? '<span class="text-[9px] font-black text-gray-400 bg-gray-200 px-2 py-0.5 rounded-md">추가됨</span>'
+                            : '<div class="w-5 h-5 rounded-full bg-[#152484] flex items-center justify-center flex-shrink-0"><svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg></div>'}
                     </div>
-                    ${badge}
-                </div>`;
+                </button>`;
             }).join('');
+
+        document.getElementById('catalog-overlay').classList.remove('hidden');
+        document.getElementById('catalog-panel').classList.add('open');
+    }
+
+    function 카탈로그닫기() {
+        document.getElementById('catalog-overlay').classList.add('hidden');
+        document.getElementById('catalog-panel').classList.remove('open');
+    }
+
+    function 카탈로그에서추가(widgetId) {
+        위젯_추가(widgetId, 0, 0);
+        레이아웃_저장();
+        카탈로그닫기();
+    }
+
+    // ════════════════════════════════════════════════════
+    // WIDGET RENDERERS
+    // ════════════════════════════════════════════════════
+
+    async function renderPending(el) {
+        const [r1, r2] = await Promise.all([
+            supabaseClient.from('purchase_orders').select('id', { count: 'exact', head: true }).eq('status', '기안중'),
+            supabaseClient.from('expense_reports').select('id', { count: 'exact', head: true }).eq('status', '기안중'),
+        ]);
+        const total = (r1.count || 0) + (r2.count || 0);
+        el.innerHTML = `
+        <div class="flex flex-col justify-between h-full py-1">
+            <div>
+                <p class="text-6xl font-black text-gray-900 num leading-none">${total}</p>
+                <p class="text-xs font-medium text-gray-400 mt-2">건 승인 대기 중</p>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-[#152484]">Action Required</span>
+                    <span class="text-[10px] font-black text-gray-500 num">${total}건</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div class="h-full rounded-full bg-[#152484] transition-all duration-700" style="width:${Math.min(total * 8, 100)}%"></div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    async function renderActivity(el) {
+        const [purchase, expense] = await Promise.all([
+            supabaseClient.from('purchase_orders').select('*').order('created_at', { ascending: false }).limit(10),
+            supabaseClient.from('expense_reports').select('*').order('created_at', { ascending: false }).limit(10),
+        ]);
+        const pData = (purchase.data || []).map(d => ({ ...d, type: '발주', tableName: 'purchase_orders' }));
+        const eData = (expense.data  || []).map(d => ({ ...d, type: '지출', tableName: 'expense_reports' }));
+        통합_목록 = [...pData, ...eData]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 12);
+
+        if (!통합_목록.length) {
+            el.innerHTML = '<p class="text-xs text-gray-400 text-center py-8">데이터 없음</p>';
+            return;
         }
 
-        로그인_확인하기();
+        el.innerHTML = `<div class="space-y-0.5">` + 통합_목록.map((item, i) => {
+            const time   = new Date(item.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const amount = Number(item.total_price || item.amount || 0).toLocaleString();
+            const name   = (item.type === '발주' ? item.vendor_name : item.category) || '—';
+            const isOk   = item.status === '승인완료';
+            const typeCls = item.type === '발주' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700';
+            return `
+            <button onclick="openModal(${i})" class="w-full text-left flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
+                <span class="text-[9px] font-black px-1.5 py-0.5 rounded-md flex-shrink-0 ${typeCls}">${item.type}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-gray-900 truncate">${name}</p>
+                    <p class="text-[10px] text-gray-400 truncate">${item.requester} · ${time}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="text-xs font-black num text-gray-800">₩${amount}</p>
+                    <div class="flex items-center justify-end gap-1 mt-0.5">
+                        <div class="w-1.5 h-1.5 rounded-full ${isOk ? 'bg-emerald-400' : 'bg-amber-400'}"></div>
+                        <span class="text-[9px] font-bold ${isOk ? 'text-emerald-600' : 'text-amber-600'}">${item.status}</span>
+                    </div>
+                </div>
+            </button>`;
+        }).join('') + `</div>`;
+    }
+
+    async function renderExpiry(el) {
+        const { data } = await supabaseClient.from('inbound_ledger').select('items_json');
+        if (!data) { el.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">데이터 없음</p>'; return; }
+
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const list = [];
+        data.forEach(rec => {
+            let items = rec.items_json;
+            if (!items) return;
+            if (!Array.isArray(items)) { try { items = JSON.parse(items); } catch { return; } }
+            items.forEach(item => {
+                if (!item.expiry_date) return;
+                const exp = new Date(item.expiry_date); exp.setHours(0, 0, 0, 0);
+                const dday = Math.floor((exp - today) / 86400000);
+                if (dday <= 14) list.push({ name: item.name, dday, expiry: item.expiry_date, qty: item.qty });
+            });
+        });
+
+        if (!list.length) {
+            el.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full gap-2">
+                <svg class="w-10 h-10 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-xs font-bold text-gray-400">임박 품목 없음</p>
+            </div>`;
+            return;
+        }
+
+        list.sort((a, b) => a.dday - b.dday);
+        el.innerHTML = list.slice(0, 8).map(item => {
+            const badgeCls = item.dday <= 3 ? 'bg-red-100 text-red-600'
+                           : item.dday <= 7 ? 'bg-orange-100 text-orange-600'
+                           :                  'bg-yellow-100 text-yellow-700';
+            return `
+            <div class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-gray-900 truncate">${item.name}</p>
+                    <p class="text-[10px] text-gray-400">${item.expiry} · ${item.qty}개</p>
+                </div>
+                <span class="ml-3 text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0 ${badgeCls}">
+                    ${item.dday <= 0 ? '만료' : 'D-' + item.dday}
+                </span>
+            </div>`;
+        }).join('');
+    }
+
+    async function renderNotice(el) {
+        const isAdmin = 현재로그인유저 === 최고관리자계정;
+        el.innerHTML = `
+        <div class="flex flex-col justify-between h-full">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-6 h-6 rounded-lg bg-[#B8D200]/20 flex items-center justify-center text-sm">📢</div>
+                <span class="text-[9px] font-black uppercase tracking-wider ${isAdmin ? 'text-[#152484]' : 'text-gray-400'}">
+                    ${isAdmin ? 'Admin Mode' : 'Notice'}
+                </span>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 leading-relaxed flex-1">
+                ${isAdmin
+                    ? '대표님, 환영합니다.<br/>모든 결재 승인 권한이 활성화되었습니다.'
+                    : '일반 직원 모드입니다.<br/>기안 문서를 열람할 수 있습니다.'}
+            </p>
+            ${isAdmin ? '<span class="mt-3 self-start text-[9px] font-black text-white bg-[#152484] px-2 py-1 rounded-md">ADMIN</span>' : ''}
+        </div>`;
+    }
+
+    function renderQuickLinks(el) {
+        const links = [
+            { label: '지출결의서', href: 'index.html',     emoji: '💸' },
+            { label: '발주서',    href: 'purchase.html',  emoji: '🛒' },
+            { label: '주문관리',  href: 'orders.html',    emoji: '📋' },
+            { label: '재고현황',  href: 'inventory.html', emoji: '📦' },
+            { label: '매입장부',  href: 'inbound.html',   emoji: '📥' },
+            { label: '매출장부',  href: 'outbound.html',  emoji: '💰' },
+        ];
+        el.innerHTML = `
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 h-full content-start">
+            ${links.map(l => `
+            <a href="${l.href}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-[#152484]/5 hover:border-[#152484]/20 transition-all group">
+                <span class="text-2xl">${l.emoji}</span>
+                <span class="text-[10px] font-bold text-gray-600 group-hover:text-[#152484] text-center leading-tight">${l.label}</span>
+            </a>`).join('')}
+        </div>`;
+    }
+
+    // ════════════════════════════════════════════════════
+    // MODAL
+    // ════════════════════════════════════════════════════
+    function openModal(index) {
+        const data = 통합_목록[index];
+        if (!data) return;
+        현재선택된ID = data.id;
+        현재테이블 = data.tableName;
+        document.getElementById('modal-title').innerText     = (data.type === '발주' ? data.vendor_name : data.category) || '—';
+        document.getElementById('modal-desc').innerText      = data.description || '상세 내용 없음';
+        document.getElementById('modal-requester').innerText = data.requester || '—';
+        document.getElementById('modal-status').innerText    = data.status || '—';
+        document.getElementById('modal-price').innerText     = '₩' + Number(data.total_price || data.amount || 0).toLocaleString();
+        document.getElementById('btn-approve').classList.toggle(
+            'hidden', !(data.status === '기안중' && 현재로그인유저 === 최고관리자계정)
+        );
+        const modal = document.getElementById('detail-modal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('detail-modal');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    async function 결재승인하기() {
+        if (!현재선택된ID) return;
+        const { error } = await supabaseClient.from(현재테이블).update({ status: '승인완료' }).eq('id', 현재선택된ID);
+        if (error) { alert('승인 실패: ' + error.message); return; }
+
+        if (현재테이블 === 'purchase_orders') {
+            const { data: po } = await supabaseClient.from('purchase_orders').select('*').eq('id', 현재선택된ID).single();
+            if (po) {
+                await supabaseClient.from('inbound_ledger').insert([{
+                    vendor: po.vendor_name, item_name: po.description,
+                    quantity: po.items_json ? po.items_json.length : 1,
+                    total_price: po.total_price, items_json: po.items_json || [],
+                    processor: 현재로그인유저, source: '결재승인_자동반영'
+                }]);
+            }
+        }
+
+        closeModal();
+        const actEl = document.querySelector('[data-widget-id="w-activity"] .widget-body');
+        const penEl = document.querySelector('[data-widget-id="w-pending"] .widget-body');
+        if (actEl) renderActivity(actEl);
+        if (penEl) renderPending(penEl);
+    }
+
+    // ════════════════════════════════════════════════════
+    // AUTH
+    // ════════════════════════════════════════════════════
+    async function 로그아웃하기() {
+        localStorage.removeItem('autoLogin');
+        await supabaseClient.auth.signOut();
+        window.location.href = 'login.html';
+    }
+
+    로그인_확인하기();
     </script>
     <script src="sidebar.js"></script>
 </body>

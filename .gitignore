@@ -1,0 +1,14 @@
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 임시/데모 파일
+*_demo.html
+*_test.html
+*.tmp
+
+# 로그
+*.log
